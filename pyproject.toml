@@ -9,9 +9,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9.7"
 fire = "^0.6.0"
-pyvista = "^0.44.1"
-vtk = "^9.3.1"
-pandas = "^2.2.2"
+pyvista = "^0.43.5"
+vtk = "^9.3.0"
+pandas = "^2.2.1"
 numpy = "1.26.4"
 
 [build-system]

@@ -17,6 +17,7 @@ def frdasc2bin(fl):
             output = True
 
     if output:
+        print(f"Read {fl}, writing for binary output to {os.path.basename(fl)}")
         with open(os.path.basename(fl), "w") as f:
             f.writelines(lns)
 

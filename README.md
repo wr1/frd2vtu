@@ -13,3 +13,8 @@ pip install frd2vtu
 frd2vtu input1.frd input2.frd ... 
 ```
 
+## Test
+```bash
+cd test
+bash test.sh
+```
