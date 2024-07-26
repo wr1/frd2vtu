@@ -35,7 +35,6 @@ def split_blocks(buf):
         b"0    0\n",
         b" 9999",
     ]
-
     out = [
         [(m.start(), m.end(), m[0]) for m in re.finditer(pattern, buf)]
         for pattern in patterns
@@ -44,8 +43,6 @@ def split_blocks(buf):
         print(f"frd format not binary")
         return None
 
-    # out = [i for i in out if i != []]
-    # out.sort(key=lambda x: x[0][0])
     return out
 
 
@@ -63,8 +60,6 @@ def frdbin2vtu(file_path):
             dtype=np.dtype([("i", "i4"), ("x", "f8"), ("y", "f8"), ("z", "f8")]),
         )
     )
-
-    # print(nodes)
 
     elm = np.frombuffer(
         buf[lcs[1][0][1] : lcs[2][0][0]],
@@ -142,29 +137,21 @@ def frdbin2vtu(file_path):
 
     ogrid.cell_data["ccx_id"] = np.array(eid)
     ogrid.cell_data["ccx_mat"] = np.array(emat)
-
     ogrid.point_data["ccx_id"] = nodes["i"]
 
-    endblocks = lcs[3] + lcs[4] + lcs[5]  #  if len(lcs) > 4 else lcs[3] + lcs[4]
+    # join the diffent types of endings for ascii blocks
+    endblocks = lcs[3] + lcs[4] + lcs[5]
 
     endblocks.sort(key=lambda x: x[0])
 
-    # print(len(lcs[2]), len(endblocks))
-
     headers = [buf[j[0][0] : j[1][1]] for j in zip(lcs[2], endblocks)]
 
-    # print(headers)
-
     for n, bl in enumerate(headers):
-        # print(f"Block {bl}", "\n" * 5)
-
         lns = bl.decode("ascii").split("\n")
 
         if bl.find(b"MODAL") != -1 and bl.find(b"DISP") != -1:
             # fix for modal analysis
-            # print("true")
             lns = lns[5:]
-            # print(lns)
 
         timestamp, nn = lns[1].split()[2:4]
         name = lns[2].split()[1]
@@ -178,7 +165,6 @@ def frdbin2vtu(file_path):
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
 
-        # print(ncomp)
         ncl = {6: 6, 4: 3, 1: 1, 20: 20}
 
         nms = [("c_" + str(i), "f4") for i in range(ncl[ncomp])]
@@ -188,7 +174,7 @@ def frdbin2vtu(file_path):
 
         na = pd.DataFrame(np.frombuffer(buf[startblock:endblock], dtype=dt))
 
-        # print(len(na), len(nodes))
+        # padding missing values for nodes that are not connected to elements
         if len(na) != len(nodes):
             missing_values = nodes[~nodes["i"].isin(na["id"])]["i"]
             padding = pd.DataFrame({"id": missing_values})
@@ -199,11 +185,9 @@ def frdbin2vtu(file_path):
             na = pd.concat([na, padding], ignore_index=True)
 
         arrn = f"{name}_{timestamp}"
-        # if name not in ["PE"]:
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
 
     of = file_path.replace(".frd", ".vtu")
-    # ogrid.save(of, binary=False)
     ogrid.save(of)
     print(f"Saved {of}")
     endtime = time.time()
