@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "frd2vtu"
-version = "0.1.1rc1"
+version = "0.1.1rc2"
 description = "converter from calculix frd to vtu"
 authors = ["wr1 <8971152+wr1@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.9.7"
 fire = "^0.6.0"
 pyvista = "^0.44.1"
 vtk = "^9.3.1"
