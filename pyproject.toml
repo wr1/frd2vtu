@@ -21,3 +21,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 frd2vtu = "frd2vtu.frd2vtu:main"
+frd2vtu_plot = "frd2vtu.basic_plot:main"
