@@ -42,3 +42,7 @@ rm *rfn.frd
 
 # convert the frd files to vtu
 time frd2vtu *frd
+
+for i in *vtu; do
+    frd2vtu_plot $i    
+done
