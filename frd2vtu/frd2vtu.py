@@ -192,6 +192,7 @@ def frdbin2vtu(file_path):
     print(f"Saved {of}")
     endtime = time.time()
     print(f"Elapsed time: {endtime - starttime} seconds")
+    return ogrid
 
 
 def frd2vtu(*frd):
@@ -200,6 +201,7 @@ def frd2vtu(*frd):
         p = multiprocessing.Pool()
         p.map(frdbin2vtu, frd)
         p.close()
+        # p.join()
     else:
         for f in frd:
             frdbin2vtu(f)
