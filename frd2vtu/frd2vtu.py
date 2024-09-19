@@ -76,8 +76,6 @@ def frdbin2vtu(file_path):
             break
 
         nid = elm[1 + nn]
-
-        # print(elm)
         ni = e2nn[nid]
         elmarr = elm[0 + nn : ni + 4 + nn]
         eid.append(elmarr[0])
@@ -153,14 +151,17 @@ def frdbin2vtu(file_path):
             # fix for modal analysis
             lns = lns[5:]
 
-        timestamp, nn = lns[1].split()[2:4]
+        # on some platforms the timestamp gets formatted without space from the run type identifier, causing split to fail.
+        # now relies on timestamp starting from 12th character
+        timestamp, nn = lns[1][12:].split()[:2]
+        timestamp, nn = float(timestamp), int(nn)
         name = lns[2].split()[1]
 
         if name in ["NORM", "SENMISE", "SENPS1", "SDV"]:
             continue
 
         ncomp = int(lns[2].split()[2])
-        print(f"timestamp: {timestamp}, nn: {nn}, name: {name}")
+        print(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
 
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
@@ -184,7 +185,7 @@ def frdbin2vtu(file_path):
 
             na = pd.concat([na, padding], ignore_index=True)
 
-        arrn = f"{name}_{timestamp}"
+        arrn = f"{name}_{timestamp:.3f}"
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
 
     of = file_path.replace(".frd", ".vtu")
