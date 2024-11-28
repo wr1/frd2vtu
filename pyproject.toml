@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "frd2vtu"
-version = "0.1.1rc7"
+version = "0.1.1rc8"
 description = "converter from calculix frd to vtu"
 authors = ["wr1 <8971152+wr1@users.noreply.github.com>"]
 license = "MIT"
@@ -12,7 +12,7 @@ fire = "^0.7.0"
 pyvista = "^0.43.1"
 vtk = "^9.3.0"
 pandas = "^2.2.0"
-numpy = "^1.24.0"
+numpy = ">2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
