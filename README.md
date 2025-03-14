@@ -1,4 +1,6 @@
-# FRD2VTU
+[![Deploy](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml)[![Test](https://github.com/wr1/frd2vtu/actions/workflows/test.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/test.yml)![PyPI](https://img.shields.io/pypi/v/frd2vtu)
+
+# frd2vtu
 
 A Python tool to convert CalculiX .frd files to VTK .vtu files.
 
@@ -16,7 +18,7 @@ pip install frd2vtu
 ## Usage
 
 ```bash
-frd2vtu input.frd output.vtu
+frd2vtu input.frd 
 ```
 
 
