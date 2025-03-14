@@ -1,23 +1,25 @@
+# FRD2VTU
 
+A Python tool to convert CalculiX .frd files to VTK .vtu files.
 
-# Calculix frd converter
-Works on binary FRD files written using the *\*element output* and *\*node output* commands. 
+## Overview
+
+This tool converts CalculiX binary .frd files to VTK .vtu files, which can be visualized in tools like ParaView. It supports various element types and can handle multiple files in parallel.
 
 ## Installation
+
 ```bash
 pip install frd2vtu
 ```
 
+
 ## Usage
+
 ```bash
-frd2vtu input1.frd input2.frd ... 
+frd2vtu input.frd output.vtu
 ```
 
-## Test
-```bash
-cd test
-bash test.sh
-```
+
 ## Examples
 
 Test cases from the ![Calculix test directory](https://github.com/Dhondtguido/CalculiX/tree/master/test)

@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+Convert CalculiX .frd files to VTK .vtu files.
+
+This module provides functionality to convert CalculiX .frd files (binary format)
+to VTK .vtu files. It supports various element types and can handle multiple files
+in parallel.
+
+Example:
+    >>> frd2vtu("model.frd")  # Convert single file
+    >>> frd2vtu("model1.frd", "model2.frd")  # Convert multiple files
+"""
+
 import numpy as np
 import re
 import pyvista as pv
@@ -7,25 +19,37 @@ import fire
 import time
 import pandas as pd
 import multiprocessing
+from typing import List, Optional, Dict, Tuple, Any
+from pathlib import Path
 
-
-e2nn = {
-    1: 8,
-    2: 6,
-    3: 4,
-    5: 15,
-    6: 10,
-    4: 20,
-    7: 3,
-    8: 6,
-    9: 4,
-    10: 8,
-    12: 3,
-    11: 2,
+# Element type to node count mapping
+e2nn: Dict[int, int] = {
+    1: 8,  # Hexahedron
+    2: 6,  # Prism
+    3: 4,  # Tetrahedron
+    4: 20,  # Quadratic Hexahedron
+    5: 15,  # Pentahedron
+    6: 10,  # Quadratic Tetrahedron
+    7: 3,  # Triangle
+    8: 6,  # Quadratic Triangle
+    9: 4,  # Quad
+    10: 8,  # Quadratic Quad
+    11: 2,  # Line
+    12: 3,  # Quadratic Line
 }
 
 
-def split_blocks(buf):
+def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
+    """
+    Split the binary buffer into blocks based on specific patterns.
+
+    Args:
+        buf: Binary buffer containing the .frd file content
+
+    Returns:
+        List of lists containing tuples of (start, end, pattern) for each block,
+        or None if the format is not binary
+    """
     patterns = [
         b"    2C(.*?)3\n",
         b"    3C(.*?)\n",
@@ -40,16 +64,31 @@ def split_blocks(buf):
         for pattern in patterns
     ]
     if out[0] == []:
-        print(f"frd format not binary")
+        print("frd format not binary")
         return None
 
     return out
 
 
-def frdbin2vtu(file_path):
+def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
+    """
+    Convert a single binary .frd file to .vtu format.
+
+    Args:
+        file_path: Path to the input .frd file
+
+    Returns:
+        PyVista UnstructuredGrid object if successful, None otherwise
+    """
     starttime = time.time()
     print(f"Converting {file_path}")
-    buf = open(file_path, "rb").read()
+
+    try:
+        buf = open(file_path, "rb").read()
+    except Exception as e:
+        print(f"Error reading file {file_path}: {e}")
+        return None
+
     lcs = split_blocks(buf)
     if lcs is None:
         return None
@@ -76,8 +115,6 @@ def frdbin2vtu(file_path):
             break
 
         nid = elm[1 + nn]
-
-        # print(elm)
         ni = e2nn[nid]
         elmarr = elm[0 + nn : ni + 4 + nn]
         eid.append(elmarr[0])
@@ -153,14 +190,17 @@ def frdbin2vtu(file_path):
             # fix for modal analysis
             lns = lns[5:]
 
-        timestamp, nn = lns[1].split()[2:4]
+        # on some platforms the timestamp gets formatted without space from the run type identifier, causing split to fail.
+        # now relies on timestamp starting from 12th character
+        timestamp, nn = lns[1][12:].split()[:2]
+        timestamp, nn = float(timestamp), int(nn)
         name = lns[2].split()[1]
 
         if name in ["NORM", "SENMISE", "SENPS1", "SDV"]:
             continue
 
         ncomp = int(lns[2].split()[2])
-        print(f"timestamp: {timestamp}, nn: {nn}, name: {name}")
+        print(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
 
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
@@ -184,7 +224,7 @@ def frdbin2vtu(file_path):
 
             na = pd.concat([na, padding], ignore_index=True)
 
-        arrn = f"{name}_{timestamp}"
+        arrn = f"{name}_{timestamp:.3f}"
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
 
     of = file_path.replace(".frd", ".vtu")
@@ -192,20 +232,31 @@ def frdbin2vtu(file_path):
     print(f"Saved {of}")
     endtime = time.time()
     print(f"Elapsed time: {endtime - starttime} seconds")
+    return ogrid
 
 
-def frd2vtu(*frd):
-    parr = True
-    if parr:
-        p = multiprocessing.Pool()
-        p.map(frdbin2vtu, frd)
-        p.close()
+def frd2vtu(*frd_files: str, parallel: bool = True) -> None:
+    """
+    Convert one or more .frd files to .vtu format.
+
+    Args:
+        *frd_files: One or more paths to .frd files to convert
+        parallel: Whether to use parallel processing (default: True)
+    """
+    if not frd_files:
+        print("No input files specified")
+        return
+
+    if parallel:
+        with multiprocessing.Pool() as p:
+            p.map(frdbin2vtu, frd_files)
     else:
-        for f in frd:
+        for f in frd_files:
             frdbin2vtu(f)
 
 
 def main():
+    """Entry point for the command-line interface."""
     fire.Fire(frd2vtu)
 
 

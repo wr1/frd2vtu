@@ -71,13 +71,13 @@ def plot_mesh_point_arrays(vtu):
 
 def basic_plots(*vtu):
     """
-    Perform basic plots for the given VTU files.
+    Create simple plots for the given VTU files.
 
     Parameters:
-    *vtu: Variable number of VTU file paths.
+        *vtu: Variable number of VTU file paths.
 
     Returns:
-    None
+        None
     """
     p = multiprocessing.Pool()
     p.map(plot_mesh_point_arrays, vtu)
