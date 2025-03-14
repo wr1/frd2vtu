@@ -12,6 +12,14 @@ This tool converts CalculiX binary .frd files to VTK .vtu files, which can be vi
 pip install frd2vtu
 ```
 
+
+## Usage
+
+```bash
+frd2vtu input.frd output.vtu
+```
+
+
 ## Examples
 
 Test cases from the ![Calculix test directory](https://github.com/Dhondtguido/CalculiX/tree/master/test)
