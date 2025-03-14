@@ -16,7 +16,7 @@ pip install frd2vtu
 ## Usage
 
 ```bash
-frd2vtu input.frd output.vtu
+frd2vtu input.frd 
 ```
 
 
