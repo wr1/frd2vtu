@@ -7,7 +7,10 @@ on:
   pull_request:
     branches:
       - main
-
+      
+permissions:
+  contents: write  # Allows writing to the repository (e.g., pushing to gh-pages)
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
