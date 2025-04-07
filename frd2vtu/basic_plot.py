@@ -1,14 +1,13 @@
 #! /usr/bin/env python
 
 import pyvista as pv
-import fire
+import argparse
 import numpy as np
 import math
 import multiprocessing
 
-
 def plot_mesh_point_arrays(vtu):
-    # Load a mesh file (replace 'your_mesh_file.vtk' with your actual file)
+    """Plot point arrays from a VTU file and save as PNG."""
     if not vtu.endswith(".vtu"):
         raise ValueError("Input file must be a .vtu file.")
 
@@ -58,7 +57,6 @@ def plot_mesh_point_arrays(vtu):
             font_size=10,
             color="black",
         )
-        # plotter.add_title(array_name, font_size=10, position="upper_left")
 
     # Render the plots and save to a PNG file
     of = vtu.replace(".vtu", ".png")
@@ -68,25 +66,29 @@ def plot_mesh_point_arrays(vtu):
 
     del plotter, mesh, warped_mesh
 
-
-def basic_plots(*vtu):
+def basic_plots(vtu_files: List[str]):
     """
     Create simple plots for the given VTU files.
 
     Parameters:
-        *vtu: Variable number of VTU file paths.
-
-    Returns:
-        None
+        vtu_files: List of VTU file paths.
     """
     p = multiprocessing.Pool()
-    p.map(plot_mesh_point_arrays, vtu)
+    p.map(plot_mesh_point_arrays, vtu_files)
     p.close()
 
-
 def main():
-    fire.Fire(basic_plots)
-
+    """Entry point for the command-line interface using argparse."""
+    parser = argparse.ArgumentParser(
+        description="Create simple plots from VTU files."
+    )
+    parser.add_argument(
+        "vtu_files",
+        nargs="+",
+        help="One or more .vtu files to plot"
+    )
+    args = parser.parse_args()
+    basic_plots(args.vtu_files)
 
 if __name__ == "__main__":
     main()

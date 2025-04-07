@@ -7,14 +7,14 @@ to VTK .vtu files. It supports various element types and can handle multiple fil
 in parallel.
 
 Example:
-    >>> frd2vtu("model.frd")  # Convert single file
-    >>> frd2vtu("model1.frd", "model2.frd")  # Convert multiple files
+    $ python frd2vtu.py model.frd
+    $ python frd2vtu.py model1.frd model2.frd --no-parallel
 """
 import numpy as np
 import re
 import pyvista as pv
 import vtk
-import fire
+import argparse
 import time
 import pandas as pd
 import multiprocessing
@@ -195,12 +195,12 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
     print(f"Elapsed time: {endtime - starttime} seconds")
     return ogrid
 
-def frd2vtu(*frd_files: str, parallel: bool = True) -> None:
+def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
     """
     Convert one or more .frd files to .vtu format.
 
     Args:
-        *frd_files: One or more paths to .frd files to convert
+        frd_files: List of paths to .frd files to convert
         parallel: Whether to use parallel processing (default: True)
     """
     if not frd_files:
@@ -214,8 +214,24 @@ def frd2vtu(*frd_files: str, parallel: bool = True) -> None:
             frdbin2vtu(f)
 
 def main():
-    """Entry point for the command-line interface."""
-    fire.Fire(frd2vtu)
+    """Entry point for the command-line interface using argparse."""
+    parser = argparse.ArgumentParser(
+        description="Convert CalculiX .frd files to VTK .vtu files."
+    )
+    parser.add_argument(
+        "frd_files",
+        nargs="+",
+        help="One or more .frd files to convert"
+    )
+    parser.add_argument(
+        "--no-parallel",
+        action="store_false",
+        dest="parallel",
+        default=True,
+        help="Disable parallel processing"
+    )
+    args = parser.parse_args()
+    frd2vtu(args.frd_files, parallel=args.parallel)
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import fire
+import argparse
 import os
 
 def frdasc2bin(fl):
@@ -31,16 +31,32 @@ def frdasc2bin(fl):
         with open(os.path.basename(fl), "w") as f:
             f.writelines(lns)
 
-def copy_file_to_dir(*src, dest="."):
+def copy_file_to_dir(src_files: List[str], dest: str = "."):
+    """Copy and process files to the destination directory."""
     runscript = ""
-    for f in src:
+    for f in src_files:
         frdasc2bin(f)
         runscript += f"ccx -i {os.path.basename(f).split('.')[0]} \n"
     with open("runscript.sh", "w") as f:
         f.write(runscript)
 
 def main():
-    fire.Fire(copy_file_to_dir)
+    """Entry point for the command-line interface using argparse."""
+    parser = argparse.ArgumentParser(
+        description="Convert ASCII .frd configurations to binary and generate a run script."
+    )
+    parser.add_argument(
+        "src_files",
+        nargs="+",
+        help="Source files to process"
+    )
+    parser.add_argument(
+        "--dest",
+        default=".",
+        help="Destination directory (default: current directory)"
+    )
+    args = parser.parse_args()
+    copy_file_to_dir(args.src_files, dest=args.dest)
 
 if __name__ == "__main__":
     main()
