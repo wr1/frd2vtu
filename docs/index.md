@@ -1,6 +1,6 @@
 # Welcome to frd2vtu
 
-A Python tool to convert CalculiX `.frd` files to VTK `.vtu` files.
+A Python tool to convert CalculiX `.frd` files written using `*element output` and `*node output` to VTK `.vtu` files.
 
 ## Overview
 

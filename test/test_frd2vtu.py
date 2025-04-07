@@ -8,6 +8,7 @@ import os
 import pytest
 from pathlib import Path
 import frd2vtu
+import frd2vtu.basic_plot
 import pyvista as pv
 
 # Get the test/frds directory
@@ -117,3 +118,24 @@ def test_specific_files(file):
 
     # Additional specific checks can be added here based on known characteristics
     # of these files
+
+
+def test_basic_plot(tmp_path, test_files):
+    """Test that the basic_plot function generates a PNG file from a VTU file."""
+    # Use a small test file for plotting
+    frd_file = "simplebeam.frd"
+    frd_path = TEST_DIR / frd_file
+    vtu_path = tmp_path / frd_path.with_suffix(".vtu").name
+    png_path = vtu_path.with_suffix(".png")
+
+    # Convert FRD to VTU
+    result = frd2vtu.frdbin2vtu(str(frd_path))
+    assert result is not None, f"Failed to convert {frd_file}"
+    result.save(str(vtu_path))
+
+    # Run the plotter directly (avoid multiprocessing for CI stability)
+    try:
+        frd2vtu.basic_plot.plot_mesh_point_arrays(str(vtu_path))
+        assert png_path.exists(), f"PNG file not created for {vtu_path}"
+    except Exception as e:
+        pytest.fail(f"Plotting failed for {vtu_path}: {str(e)}")
