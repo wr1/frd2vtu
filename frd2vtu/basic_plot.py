@@ -5,6 +5,8 @@ import argparse
 import numpy as np
 import math
 import multiprocessing
+from typing import List
+
 
 def plot_mesh_point_arrays(vtu):
     """Plot point arrays from a VTU file and save as PNG."""
@@ -66,29 +68,32 @@ def plot_mesh_point_arrays(vtu):
 
     del plotter, mesh, warped_mesh
 
-def basic_plots(vtu_files: List[str]):
+
+def basic_plots(vtu_files: List[str], parallel: bool = True):
     """
     Create simple plots for the given VTU files.
 
     Parameters:
         vtu_files: List of VTU file paths.
     """
-    p = multiprocessing.Pool()
-    p.map(plot_mesh_point_arrays, vtu_files)
-    p.close()
+    if parallel:
+        p = multiprocessing.Pool()
+        p.map(plot_mesh_point_arrays, vtu_files)
+        p.close()
+        p.join()
+    else:
+        for vtu in vtu_files:
+            plot_mesh_point_arrays(vtu)
+    print("** Finished plotting.")
+
 
 def main():
     """Entry point for the command-line interface using argparse."""
-    parser = argparse.ArgumentParser(
-        description="Create simple plots from VTU files."
-    )
-    parser.add_argument(
-        "vtu_files",
-        nargs="+",
-        help="One or more .vtu files to plot"
-    )
+    parser = argparse.ArgumentParser(description="Create simple plots from VTU files.")
+    parser.add_argument("vtu_files", nargs="+", help="One or more .vtu files to plot")
     args = parser.parse_args()
     basic_plots(args.vtu_files)
+
 
 if __name__ == "__main__":
     main()
