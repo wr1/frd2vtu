@@ -50,8 +50,8 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
         or None if the format is not binary
     """
     patterns = [
-        b"    2C(.*?)3\n",
-        b"    3C(.*?)\n",
+        b"    2C  (.*?)3\n",
+        b"    3C  (.*?)\n",
         b"    1PSTEP(.*?)\n",
         b"1ALL\n",
         b"3    1\n",
