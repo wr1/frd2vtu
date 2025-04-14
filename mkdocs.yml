@@ -1,0 +1,9 @@
+site_name: frd2vtu Documentation
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - Examples: examples.md
+  - API Reference: api.md
