@@ -26,16 +26,17 @@ e2nn: Dict[int, int] = {
     1: 8,  # Hexahedron
     2: 6,  # Prism
     3: 4,  # Tetrahedron
-    4: 20, # Quadratic Hexahedron
-    5: 15, # Pentahedron
-    6: 10, # Quadratic Tetrahedron
+    4: 20,  # Quadratic Hexahedron
+    5: 15,  # Pentahedron
+    6: 10,  # Quadratic Tetrahedron
     7: 3,  # Triangle
     8: 6,  # Quadratic Triangle
     9: 4,  # Quad
-    10: 8, # Quadratic Quad
-    11: 2, # Line
-    12: 3, # Quadratic Line
+    10: 8,  # Quadratic Quad
+    11: 2,  # Line
+    12: 3,  # Quadratic Line
 }
+
 
 def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
     """
@@ -49,8 +50,8 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
         or None if the format is not binary
     """
     patterns = [
-        b"    2C(.*?)3\n",
-        b"    3C(.*?)\n",
+        b"    2C  (.*?)3\n",
+        b"    3C  (.*?)\n",
         b"    1PSTEP(.*?)\n",
         b"1ALL\n",
         b"3    1\n",
@@ -65,6 +66,7 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
         print("frd format not binary")
         return None
     return out
+
 
 def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
     """
@@ -166,6 +168,9 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
         lns = bl.decode("ascii").split("\n")
         if bl.find(b"MODAL") != -1 and bl.find(b"DISP") != -1:
             lns = lns[5:]
+
+        # on some platforms the timestamp gets formatted without space from the run type identifier, causing split to fail.
+        # now relies on timestamp starting from 12th character
         timestamp, nn = lns[1][12:].split()[:2]
         timestamp, nn = float(timestamp), int(nn)
         name = lns[2].split()[1]
@@ -173,6 +178,8 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
             continue
         ncomp = int(lns[2].split()[2])
         print(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
+
+        # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
         ncl = {6: 6, 4: 3, 1: 1, 20: 20}
         nms = [("c_" + str(i), "f4") for i in range(ncl[ncomp])]
@@ -195,6 +202,7 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
     print(f"Elapsed time: {endtime - starttime} seconds")
     return ogrid
 
+
 def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
     """
     Convert one or more .frd files to .vtu format.
@@ -213,25 +221,25 @@ def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
         for f in frd_files:
             frdbin2vtu(f)
 
+
 def main():
     """Entry point for the command-line interface using argparse."""
     parser = argparse.ArgumentParser(
         description="Convert CalculiX .frd files to VTK .vtu files."
     )
     parser.add_argument(
-        "frd_files",
-        nargs="+",
-        help="One or more .frd files to convert"
+        "frd_files", nargs="+", help="One or more .frd files to convert"
     )
     parser.add_argument(
         "--no-parallel",
         action="store_false",
         dest="parallel",
         default=True,
-        help="Disable parallel processing"
+        help="Disable parallel processing",
     )
     args = parser.parse_args()
     frd2vtu(args.frd_files, parallel=args.parallel)
+
 
 if __name__ == "__main__":
     main()
