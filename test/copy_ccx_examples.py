@@ -2,6 +2,11 @@
 
 import argparse
 import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 def frdasc2bin(fl):
     """
@@ -27,7 +32,7 @@ def frdasc2bin(fl):
             lns[i] = lw.replace("*node file", "*node output")
             output = True
     if output:
-        print(f"Read {fl}, writing for binary output to {os.path.basename(fl)}")
+        logger.info(f"Read {fl}, writing for binary output to {os.path.basename(fl)}")
         with open(os.path.basename(fl), "w") as f:
             f.writelines(lns)
 

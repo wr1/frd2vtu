@@ -10,6 +10,7 @@ Example:
     $ python frd2vtu.py model.frd
     $ python frd2vtu.py model1.frd model2.frd --no-parallel
 """
+
 import numpy as np
 import re
 import pyvista as pv
@@ -18,8 +19,13 @@ import argparse
 import time
 import pandas as pd
 import multiprocessing
+import logging
 from typing import List, Optional, Dict, Tuple, Any
 from pathlib import Path
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 # Element type to node count mapping
 e2nn: Dict[int, int] = {
@@ -63,7 +69,7 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
         for pattern in patterns
     ]
     if out[0] == []:
-        print("frd format not binary")
+        logger.info("frd format not binary")
         return None
     return out
 
@@ -79,11 +85,11 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
         PyVista UnstructuredGrid object if successful, None otherwise
     """
     starttime = time.time()
-    print(f"Converting {file_path}")
+    logger.info(f"Converting {file_path}")
     try:
         buf = open(file_path, "rb").read()
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        logger.info(f"Error reading file {file_path}: {e}")
         return None
     lcs = split_blocks(buf)
     if lcs is None:
@@ -153,7 +159,7 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
             els[vtk.VTK_QUAD].append(nz[e[:4]])
             nn += 8
         else:
-            print(f"Unknown element type: {nid}")
+            logger.info(f"Unknown element type: {nid}")
             break
     for i in els:
         els[i] = np.array(els[i])
@@ -177,7 +183,7 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
         if name in ["NORM", "SENMISE", "SENPS1", "SDV"]:
             continue
         ncomp = int(lns[2].split()[2])
-        print(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
+        logger.info(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
 
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
@@ -197,9 +203,9 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
     of = file_path.replace(".frd", ".vtu")
     ogrid.save(of)
-    print(f"Saved {of}")
+    logger.info(f"Saved {of}")
     endtime = time.time()
-    print(f"Elapsed time: {endtime - starttime} seconds")
+    logger.info(f"Elapsed time: {endtime - starttime} seconds")
     return ogrid
 
 
@@ -212,7 +218,7 @@ def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
         parallel: Whether to use parallel processing (default: True)
     """
     if not frd_files:
-        print("No input files specified")
+        logger.info("No input files specified")
         return
     if parallel:
         with multiprocessing.Pool() as p:
