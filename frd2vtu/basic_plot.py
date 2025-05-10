@@ -5,7 +5,12 @@ import argparse
 import numpy as np
 import math
 import multiprocessing
+import logging
 from typing import List
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
 
 def plot_mesh_point_arrays(vtu):
@@ -64,7 +69,7 @@ def plot_mesh_point_arrays(vtu):
     of = vtu.replace(".vtu", ".png")
     plotter.screenshot(of)
     plotter.close()
-    print(f"** saved {of}")
+    logger.info(f"** saved {of}")
 
     del plotter, mesh, warped_mesh
 
@@ -84,7 +89,7 @@ def basic_plots(vtu_files: List[str], parallel: bool = True):
     else:
         for vtu in vtu_files:
             plot_mesh_point_arrays(vtu)
-    print("** Finished plotting.")
+    logger.info("** Finished plotting.")
 
 
 def main():

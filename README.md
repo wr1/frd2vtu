@@ -3,6 +3,7 @@
 # frd2vtu
 
 A Python tool to convert CalculiX .frd files to VTK .vtu files.
+It is inspired by ccx2paraview https://github.com/calculix/ccx2paraview
 
 ## Overview
 
