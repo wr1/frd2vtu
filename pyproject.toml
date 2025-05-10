@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "frd2vtu"
-version = "0.1.3rc2"
+version = "0.1.3"
 description = "converter from calculix binary frd to vtu"
 authors = ["wr1 <8971152+wr1@users.noreply.github.com>"]
 license = "MIT"
