@@ -9,8 +9,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.11"
 pyvista = ">=0.45.2"
-pandas = ">2.2.0"
-numpy = ">2.2.6"
+pandas = ">=2.2.0"
+numpy = ">=2.2.6"
 
 [build-system]
 requires = ["poetry-core"]
