@@ -1,21 +1,21 @@
-[tool.poetry]
+[project]
 name = "frd2vtu"
-version = "0.1.6"
+version = "0.1.7"
 description = "converter from calculix binary frd to vtu"
-authors = ["wr1 <8971152+wr1@users.noreply.github.com>"]
-license = "MIT"
+authors = [{ name = "wr1", email = "8971152+wr1@users.noreply.github.com" }]
+requires-python = ">=3.11"
 readme = "README.md"
+license = "MIT"
+dependencies = [
+    "pyvista==0.44.2",
+    "pandas>=2.2.0",
+    "numpy>=2.2.6",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11"
-pyvista = "0.44.2"
-pandas = ">=2.2.0"
-numpy = "2.2.6"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
+[project.scripts]
 frd2vtu = "frd2vtu.frd2vtu:main"
 frd2vtu_plot = "frd2vtu.basic_plot:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
