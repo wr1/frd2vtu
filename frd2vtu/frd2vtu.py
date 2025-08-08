@@ -184,7 +184,8 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
         if name in ["NORM", "SENMISE", "SENPS1", "SDV"]:
             continue
         ncomp = int(lns[2].split()[2])
-        logger.info(f"timestamp: {timestamp:.3f}, nn: {nn}, name: {name}")
+        arrn = f"{name}_{timestamp:.3f}"
+        logger.info(f"timestamp: {timestamp:.3f}, nn: {nn}, array: {arrn}")
 
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
@@ -200,7 +201,6 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
                 if col != "id":
                     padding[col] = 0
             na = pd.concat([na, padding], ignore_index=True)
-        arrn = f"{name}_{timestamp:.3f}"
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
     of = file_path.replace(".frd", ".vtu")
     ogrid.save(of)
