@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 
-import argparse
 import os
 import logging
+from typing import List
+import rich_click as click
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -45,23 +46,12 @@ def copy_file_to_dir(src_files: List[str], dest: str = "."):
     with open("runscript.sh", "w") as f:
         f.write(runscript)
 
-def main():
-    """Entry point for the command-line interface using argparse."""
-    parser = argparse.ArgumentParser(
-        description="Convert ASCII .frd configurations to binary and generate a run script."
-    )
-    parser.add_argument(
-        "src_files",
-        nargs="+",
-        help="Source files to process"
-    )
-    parser.add_argument(
-        "--dest",
-        default=".",
-        help="Destination directory (default: current directory)"
-    )
-    args = parser.parse_args()
-    copy_file_to_dir(args.src_files, dest=args.dest)
+@click.command()
+@click.argument("src_files", nargs=-1)
+@click.option("-d", "--dest", default=".", help="Destination directory (default: current directory)")
+def main(src_files, dest):
+    """Convert ASCII .frd configurations to binary and generate a run script."""
+    copy_file_to_dir(src_files, dest=dest)
 
 if __name__ == "__main__":
     main()
