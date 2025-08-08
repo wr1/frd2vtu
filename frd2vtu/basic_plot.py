@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 
 import pyvista as pv
-import argparse
 import numpy as np
 import math
 import multiprocessing
 import logging
 from typing import List
+import rich_click as click
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -91,13 +91,13 @@ def basic_plots(vtu_files: List[str], parallel: bool = True):
             plot_mesh_point_arrays(vtu)
     logger.info("** Finished plotting.")
 
-
-def main():
-    """Entry point for the command-line interface using argparse."""
-    parser = argparse.ArgumentParser(description="Create simple plots from VTU files.")
-    parser.add_argument("vtu_files", nargs="+", help="One or more .vtu files to plot")
-    args = parser.parse_args()
-    basic_plots(args.vtu_files)
+@click.command()
+@click.argument("vtu_files", nargs=-1)
+@click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
+def main(vtu_files, no_parallel):
+    """Create simple plots from VTU files."""
+    parallel = not no_parallel
+    basic_plots(vtu_files, parallel=parallel)
 
 
 if __name__ == "__main__":
