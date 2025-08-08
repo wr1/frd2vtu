@@ -18,6 +18,12 @@ Convert multiple files at once (processed in parallel by default):
 frd2vtu file1.frd file2.frd file3.frd
 ```
 
+### Disable Parallel Processing
+
+```bash
+frd2vtu file1.frd file2.frd --no-parallel
+```
+
 ### Plotting
 
 Generate basic plots from `.vtu` files:
