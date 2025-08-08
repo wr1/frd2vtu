@@ -19,3 +19,4 @@ frd2vtu_plot = "frd2vtu.basic_plot:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
