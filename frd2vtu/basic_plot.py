@@ -9,7 +9,7 @@ from typing import List
 import rich_click as click
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -91,6 +91,7 @@ def basic_plots(vtu_files: List[str], parallel: bool = True):
             plot_mesh_point_arrays(vtu)
     logger.info("** Finished plotting.")
 
+
 @click.command()
 @click.argument("vtu_files", nargs=-1)
 @click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
@@ -102,4 +103,3 @@ def main(vtu_files, no_parallel):
 
 if __name__ == "__main__":
     main()
-

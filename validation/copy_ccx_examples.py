@@ -6,8 +6,9 @@ from typing import List
 import rich_click as click
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
+
 
 def frdasc2bin(fl):
     """
@@ -37,6 +38,7 @@ def frdasc2bin(fl):
         with open(os.path.basename(fl), "w") as f:
             f.writelines(lns)
 
+
 def copy_file_to_dir(src_files: List[str], dest: str = "."):
     """Copy and process files to the destination directory."""
     runscript = ""
@@ -46,13 +48,19 @@ def copy_file_to_dir(src_files: List[str], dest: str = "."):
     with open("runscript.sh", "w") as f:
         f.write(runscript)
 
+
 @click.command()
 @click.argument("src_files", nargs=-1)
-@click.option("-d", "--dest", default=".", help="Destination directory (default: current directory)")
+@click.option(
+    "-d",
+    "--dest",
+    default=".",
+    help="Destination directory (default: current directory)",
+)
 def main(src_files, dest):
     """Convert ASCII .frd configurations to binary and generate a run script."""
     copy_file_to_dir(src_files, dest=dest)
 
+
 if __name__ == "__main__":
     main()
-

@@ -21,8 +21,7 @@ import pandas as pd
 import multiprocessing
 import logging
 import os
-from typing import List, Optional, Dict, Tuple, Any
-from pathlib import Path
+from typing import List, Optional, Dict, Tuple
 import rich_click as click
 
 # Set up logging
@@ -229,6 +228,7 @@ def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
         for f in frd_files:
             frdbin2vtu(f)
 
+
 def prepare_inp_for_binary(inp_files: List[str]) -> None:
     """
     Prepare CalculiX input files for binary output.
@@ -241,11 +241,11 @@ def prepare_inp_for_binary(inp_files: List[str]) -> None:
         output = False
         for i, ln in enumerate(lns):
             lw = ln.lower()
-            if lw.startswith('*el file'):
-                lns[i] = lw.replace('*el file', '*element output')
+            if lw.startswith("*el file"):
+                lns[i] = lw.replace("*el file", "*element output")
                 output = True
-            if lw.startswith('*node file'):
-                lns[i] = lw.replace('*node file', '*node output')
+            if lw.startswith("*node file"):
+                lns[i] = lw.replace("*node file", "*node output")
                 output = True
         if output:
             output_file = os.path.basename(fl)
@@ -255,9 +255,11 @@ def prepare_inp_for_binary(inp_files: List[str]) -> None:
         else:
             logger.info(f"No changes needed for {fl}")
 
+
 @click.group()
 def cli():
     pass
+
 
 @cli.command()
 @click.argument("frd_files", nargs=-1)
@@ -267,12 +269,13 @@ def convert(frd_files, no_parallel):
     parallel = not no_parallel
     frd2vtu(frd_files, parallel=parallel)
 
+
 @cli.command()
 @click.argument("inp_files", nargs=-1)
 def iprep(inp_files):
     """Prepare CalculiX .inp files for binary output."""
     prepare_inp_for_binary(inp_files)
 
+
 if __name__ == "__main__":
     cli()
-
