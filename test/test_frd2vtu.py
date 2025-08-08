@@ -139,3 +139,4 @@ def test_basic_plot(tmp_path, test_files):
         assert png_path.exists(), f"PNG file not created for {vtu_path}"
     except Exception as e:
         pytest.fail(f"Plotting failed for {vtu_path}: {str(e)}")
+
