@@ -23,6 +23,16 @@ Convert a single binary `.frd` file to `.vtu` format.
 - **Returns**:
   - `pyvista.UnstructuredGrid` if successful, `None` otherwise.
 
+### `frd2vtu.prepare_inp_for_binary(inp_files)`
+
+Prepare CalculiX input files for binary output.
+
+- **Args**:
+  - `inp_files` (List[str]): Paths to `.inp` files to modify.
+
+- **Returns**:
+  - None
+
 ## frd2vtu.basic_plot
 
 ### `frd2vtu.basic_plot.basic_plots(*vtu)`
