@@ -7,8 +7,9 @@ to VTK .vtu files. It supports various element types and can handle multiple fil
 in parallel.
 
 Example:
-    $ frd2vtu model.frd
-    $ frd2vtu model1.frd model2.frd --no-parallel
+    $ frd2vtu convert model.frd
+    $ frd2vtu convert model1.frd model2.frd --no-parallel
+    $ frd2vtu iprep input.inp
 """
 
 import numpy as np
@@ -19,6 +20,7 @@ import time
 import pandas as pd
 import multiprocessing
 import logging
+import os
 from typing import List, Optional, Dict, Tuple, Any
 from pathlib import Path
 import rich_click as click
@@ -227,15 +229,50 @@ def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
         for f in frd_files:
             frdbin2vtu(f)
 
-@click.command()
+def prepare_inp_for_binary(inp_files: List[str]) -> None:
+    """
+    Prepare CalculiX input files for binary output.
+
+    Args:
+        inp_files: List of paths to .inp files to modify
+    """
+    for fl in inp_files:
+        lns = open(fl).readlines()
+        output = False
+        for i, ln in enumerate(lns):
+            lw = ln.lower()
+            if lw.startswith('*el file'):
+                lns[i] = lw.replace('*el file', '*element output')
+                output = True
+            if lw.startswith('*node file'):
+                lns[i] = lw.replace('*node file', '*node output')
+                output = True
+        if output:
+            output_file = os.path.basename(fl)
+            logger.info(f"Read {fl}, writing for binary output to {output_file}")
+            with open(output_file, "w") as f:
+                f.writelines(lns)
+        else:
+            logger.info(f"No changes needed for {fl}")
+
+@click.group()
+def cli():
+    pass
+
+@cli.command()
 @click.argument("frd_files", nargs=-1)
 @click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
-def main(frd_files, no_parallel):
+def convert(frd_files, no_parallel):
     """Convert CalculiX .frd files to VTK .vtu files."""
     parallel = not no_parallel
     frd2vtu(frd_files, parallel=parallel)
 
+@cli.command()
+@click.argument("inp_files", nargs=-1)
+def iprep(inp_files):
+    """Prepare CalculiX .inp files for binary output."""
+    prepare_inp_for_binary(inp_files)
 
 if __name__ == "__main__":
-    main()
+    cli()
 
