@@ -1,6 +1,8 @@
 site_name: frd2vtu Documentation
 theme:
   name: material
+  palette:
+    scheme: slate
 nav:
   - Home: index.md
   - Installation: installation.md
