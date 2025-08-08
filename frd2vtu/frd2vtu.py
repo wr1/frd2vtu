@@ -7,21 +7,21 @@ to VTK .vtu files. It supports various element types and can handle multiple fil
 in parallel.
 
 Example:
-    $ python frd2vtu.py model.frd
-    $ python frd2vtu.py model1.frd model2.frd --no-parallel
+    $ frd2vtu model.frd
+    $ frd2vtu model1.frd model2.frd --no-parallel
 """
 
 import numpy as np
 import re
 import pyvista as pv
 import vtk
-import argparse
 import time
 import pandas as pd
 import multiprocessing
 import logging
 from typing import List, Optional, Dict, Tuple, Any
 from pathlib import Path
+import rich_click as click
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -227,24 +227,13 @@ def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
         for f in frd_files:
             frdbin2vtu(f)
 
-
-def main():
-    """Entry point for the command-line interface using argparse."""
-    parser = argparse.ArgumentParser(
-        description="Convert CalculiX .frd files to VTK .vtu files."
-    )
-    parser.add_argument(
-        "frd_files", nargs="+", help="One or more .frd files to convert"
-    )
-    parser.add_argument(
-        "--no-parallel",
-        action="store_false",
-        dest="parallel",
-        default=True,
-        help="Disable parallel processing",
-    )
-    args = parser.parse_args()
-    frd2vtu(args.frd_files, parallel=args.parallel)
+@click.command()
+@click.argument("frd_files", nargs=-1)
+@click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
+def main(frd_files, no_parallel):
+    """Convert CalculiX .frd files to VTK .vtu files."""
+    parallel = not no_parallel
+    frd2vtu(frd_files, parallel=parallel)
 
 
 if __name__ == "__main__":
