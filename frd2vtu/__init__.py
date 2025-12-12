@@ -11,6 +11,8 @@ Example:
     >>> frd2vtu("model1.frd", "model2.frd")  # Convert multiple files
 """
 
-from .frd2vtu import frdbin2vtu, frd2vtu
+from .core import frdbin2vtu, frd2vtu
 
-__all__ = ["frd2vtu", "frdbin2vtu"]
+from .plotting import basic_plots, plot_mesh_point_arrays
+
+__all__ = ["frd2vtu", "frdbin2vtu", "basic_plots", "plot_mesh_point_arrays"]

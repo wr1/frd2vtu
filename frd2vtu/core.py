@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 """
-Convert CalculiX .frd files to VTK .vtu files.
-
-This module provides functionality to convert CalculiX .frd files (binary format)
-to VTK .vtu files. It supports various element types and can handle multiple files
-in parallel.
-
-Example:
-    $ frd2vtu convert model.frd
-    $ frd2vtu convert model1.frd model2.frd --no-parallel
-    $ frd2vtu iprep input.inp
+Core conversion functionality for FRD to VTU.
 """
 
 import numpy as np
@@ -22,7 +13,7 @@ import multiprocessing
 import logging
 import os
 from typing import List, Optional, Dict, Tuple
-import rich_click as click
+from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -75,12 +66,13 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
     return out
 
 
-def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
+def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.UnstructuredGrid]:
     """
     Convert a single binary .frd file to .vtu format.
 
     Args:
         file_path: Path to the input .frd file
+        output_dir: Optional directory to save the output .vtu file
 
     Returns:
         PyVista UnstructuredGrid object if successful, None otherwise
@@ -178,6 +170,7 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
 
         # on some platforms the timestamp gets formatted without space from the run type identifier, causing split to fail.
         # now relies on timestamp starting from 12th character
+        print(lns)
         timestamp, nn = lns[1][12:].split()[:2]
         timestamp, nn = float(timestamp), int(nn)
         name = lns[2].split()[1]
@@ -202,39 +195,41 @@ def frdbin2vtu(file_path: str) -> Optional[pv.UnstructuredGrid]:
                     padding[col] = 0
             na = pd.concat([na, padding], ignore_index=True)
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
-    of = file_path.replace(".frd", ".vtu")
-    ogrid.save(of)
-    logger.info(f"Saved {of}")
+    output_path = Path(output_dir) / Path(file_path).name.replace(".frd", ".vtu") if output_dir else Path(file_path).with_suffix(".vtu")
+    ogrid.save(str(output_path))
+    logger.info(f"Saved {output_path}")
     endtime = time.time()
     logger.info(f"Elapsed time: {endtime - starttime} seconds")
     return ogrid
 
 
-def frd2vtu(frd_files: List[str], parallel: bool = True) -> None:
+def frd2vtu(frd_files: List[str], parallel: bool = True, output_dir: Optional[str] = None) -> None:
     """
     Convert one or more .frd files to .vtu format.
 
     Args:
         frd_files: List of paths to .frd files to convert
         parallel: Whether to use parallel processing (default: True)
+        output_dir: Optional directory to save output .vtu files
     """
     if not frd_files:
         logger.info("No input files specified")
         return
     if parallel:
         with multiprocessing.Pool() as p:
-            p.map(frdbin2vtu, frd_files)
+            p.starmap(frdbin2vtu, [(f, output_dir) for f in frd_files])
     else:
         for f in frd_files:
-            frdbin2vtu(f)
+            frdbin2vtu(f, output_dir)
 
 
-def prepare_inp_for_binary(inp_files: List[str]) -> None:
+def prepare_inp_for_binary(inp_files: List[str], output_dir: Optional[str] = None) -> None:
     """
     Prepare CalculiX input files for binary output.
 
     Args:
         inp_files: List of paths to .inp files to modify
+        output_dir: Optional directory to save modified files
     """
     for fl in inp_files:
         lns = open(fl).readlines()
@@ -248,34 +243,9 @@ def prepare_inp_for_binary(inp_files: List[str]) -> None:
                 lns[i] = lw.replace("*node file", "*node output")
                 output = True
         if output:
-            output_file = os.path.basename(fl)
-            logger.info(f"Read {fl}, writing for binary output to {output_file}")
-            with open(output_file, "w") as f:
+            output_path = Path(output_dir) / Path(fl).name if output_dir else Path(fl).name
+            logger.info(f"Read {fl}, writing for binary output to {output_path}")
+            with open(output_path, "w") as f:
                 f.writelines(lns)
         else:
             logger.info(f"No changes needed for {fl}")
-
-
-@click.group()
-def cli():
-    pass
-
-
-@cli.command()
-@click.argument("frd_files", nargs=-1)
-@click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
-def convert(frd_files, no_parallel):
-    """Convert CalculiX .frd files to VTK .vtu files."""
-    parallel = not no_parallel
-    frd2vtu(frd_files, parallel=parallel)
-
-
-@cli.command()
-@click.argument("inp_files", nargs=-1)
-def iprep(inp_files):
-    """Prepare CalculiX .inp files for binary output."""
-    prepare_inp_for_binary(inp_files)
-
-
-if __name__ == "__main__":
-    cli()

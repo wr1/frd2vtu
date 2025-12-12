@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+"""
+Plotting functionality for VTU files.
+"""
 
 import pyvista as pv
 import numpy as np

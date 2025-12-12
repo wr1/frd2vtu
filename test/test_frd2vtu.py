@@ -7,7 +7,8 @@ Tests a variety of FRD files with different characteristics.
 import pytest
 from pathlib import Path
 import frd2vtu
-import frd2vtu.basic_plot
+import frd2vtu.plotting
+import frd2vtu.cli
 import pyvista as pv
 
 # Get the test/frds directory
@@ -134,7 +135,16 @@ def test_basic_plot(tmp_path, test_files):
 
     # Run the plotter directly (avoid multiprocessing for CI stability)
     try:
-        frd2vtu.basic_plot.plot_mesh_point_arrays(str(vtu_path))
+        frd2vtu.plotting.plot_mesh_point_arrays(str(vtu_path))
         assert png_path.exists(), f"PNG file not created for {vtu_path}"
     except Exception as e:
         pytest.fail(f"Plotting failed for {vtu_path}: {str(e)}")
+
+
+def test_cli_help(monkeypatch, capsys):
+    """Test CLI help output."""
+    monkeypatch.setattr("sys.argv", ["frd2vtu", "--help"])
+    with pytest.raises(SystemExit):
+        frd2vtu.cli.main()
+    captured = capsys.readouterr()
+    assert "Convert CalculiX .frd files" in captured.out
