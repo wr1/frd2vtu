@@ -1,18 +1,16 @@
 # Installation
 
-To install `frd2vtu`, use pip:
-
 ```bash
 pip install frd2vtu
 ```
 
 ### Requirements
 
-- Python >= 3.9.7
-- pyvista (>=0.43.1, <=0.44.2)
-- vtk (^9.3.0)
-- pandas (^2.2.0)
-- numpy (>2.0.0)
+- Python >= 3.10
+- pyvista >= 0.44.2
+- pandas >= 2.2.0
+- numpy >= 2.2.6
+- rich-click
+- treeparse
 
 These dependencies are automatically installed with the package.
-
