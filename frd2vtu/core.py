@@ -170,7 +170,6 @@ def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.
 
         # on some platforms the timestamp gets formatted without space from the run type identifier, causing split to fail.
         # now relies on timestamp starting from 12th character
-        print(lns)
         timestamp, nn = lns[1][12:].split()[:2]
         timestamp, nn = float(timestamp), int(nn)
         name = lns[2].split()[1]

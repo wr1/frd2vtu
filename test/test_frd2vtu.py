@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-"""
-Pytest tests for frd2vtu conversion functionality.
-Tests a variety of FRD files with different characteristics.
-"""
+"""Pytest tests for frd2vtu conversion functionality."""
 
 import pytest
 from pathlib import Path
@@ -11,138 +8,60 @@ import frd2vtu.plotting
 import frd2vtu.cli
 import pyvista as pv
 
-# Get the test/frds directory
 TEST_DIR = Path(__file__).parent / "frds"
 
-
-@pytest.fixture
-def test_files():
-    """Fixture providing test FRD files with different characteristics."""
-    return {
-        "small": [
-            "simplebeam.frd",
-            "truss.frd",
-            "oneel.frd",
-        ],
-        "medium": [
-            "shell7.frd",
-            "contact11.frd",
-            "planestress3.frd",
-        ],
-        "large": [
-            "thermomech.frd",
-            "concretebeam.frd",
-            "contact19.frd",
-        ],
-        "special": [
-            # "zerocoeff.frd",  # Very small file
-            "segmentunsmooth.frd",  # Complex geometry
-            "induction.frd",  # Large file with different element types
-        ],
-    }
+FRD_FILES = [
+    "simplebeam.frd",
+    "truss.frd",
+    "oneel.frd",
+    "shell7.frd",
+    "contact11.frd",
+    "planestress3.frd",
+    "thermomech.frd",
+    "concretebeam.frd",
+    "contact19.frd",
+    "segmentunsmooth.frd",  # complex geometry
+    "induction.frd",  # large, mixed element types
+]
 
 
-def test_frd_file_exists(test_files):
-    """Test that all test files exist."""
-    for category in test_files.values():
-        for file in category:
-            assert (TEST_DIR / file).exists(), f"Test file not found: {file}"
+@pytest.fixture(scope="module", params=FRD_FILES)
+def grid(request):
+    frd_path = TEST_DIR / request.param
+    return request.param, frd2vtu.frdbin2vtu(str(frd_path))
 
 
-@pytest.mark.parametrize("category", ["small", "medium", "large", "special"])
-def test_frd_conversion(test_files, category):
-    """Test FRD to VTU conversion for files in each category."""
-    for file in test_files[category]:
-        frd_path = TEST_DIR / file
-        result = frd2vtu.frdbin2vtu(str(frd_path))
-        assert result is not None, f"Failed to convert {file}"
-        assert isinstance(result, pv.UnstructuredGrid), (
-            f"Result for {file} is not a PyVista grid"
-        )
+def test_conversion(grid):
+    """Converted result is a non-empty PyVista grid with expected arrays."""
+    file, result = grid
+    assert isinstance(result, pv.UnstructuredGrid), f"{file}: not a PyVista grid"
+    assert result.n_points > 0, f"{file}: no points"
+    assert result.n_cells > 0, f"{file}: no cells"
+    assert "ccx_id" in result.point_data, f"{file}: missing point ccx_id"
+    assert "ccx_id" in result.cell_data, f"{file}: missing cell ccx_id"
+    assert "ccx_mat" in result.cell_data, f"{file}: missing cell ccx_mat"
 
 
-def test_vtu_output(test_files):
-    """Test that VTU files are created and valid."""
-    for category in test_files.values():
-        for file in category:
-            frd_path = TEST_DIR / file
-            vtu_path = frd_path.with_suffix(".vtu")
-
-            # Convert the file
-            result = frd2vtu.frdbin2vtu(str(frd_path))
-            assert result is not None, f"Failed to convert {file}"
-
-            # Check that VTU file was created
-            assert vtu_path.exists(), f"VTU file not created for {file}"
-
-            # Try to read the VTU file
-            try:
-                grid = pv.read(vtu_path)
-                assert isinstance(grid, pv.UnstructuredGrid), (
-                    f"Invalid VTU file for {file}"
-                )
-            except Exception as e:
-                pytest.fail(f"Failed to read VTU file for {file}: {str(e)}")
+def test_vtu_readable(grid):
+    """VTU file written alongside the FRD is readable."""
+    file, _ = grid
+    vtu_path = TEST_DIR / Path(file).with_suffix(".vtu")
+    assert vtu_path.exists(), f"{file}: VTU not created"
+    assert isinstance(pv.read(vtu_path), pv.UnstructuredGrid)
 
 
-def test_grid_properties(test_files):
-    """Test that converted grids have expected properties."""
-    for category in test_files.values():
-        for file in category:
-            frd_path = TEST_DIR / file
-            result = frd2vtu.frdbin2vtu(str(frd_path))
-            assert result is not None, f"Failed to convert {file}"
-
-            # Check basic grid properties
-            assert result.n_points > 0, f"Grid for {file} has no points"
-            assert result.n_cells > 0, f"Grid for {file} has no cells"
-
-            # Check that expected data arrays are present
-            assert "ccx_id" in result.point_data, (
-                f"Missing ccx_id in point data for {file}"
-            )
-            assert "ccx_id" in result.cell_data, (
-                f"Missing ccx_id in cell data for {file}"
-            )
-            assert "ccx_mat" in result.cell_data, (
-                f"Missing ccx_mat in cell data for {file}"
-            )
-
-
-@pytest.mark.parametrize("file", ["simplebeam.frd"])
-def test_specific_files(file):
-    """Test specific files that might have special characteristics."""
-    frd_path = TEST_DIR / file
+def test_basic_plot(tmp_path):
+    """Plotter writes a PNG next to the VTU."""
+    frd_path = TEST_DIR / "simplebeam.frd"
+    vtu_path = tmp_path / "simplebeam.vtu"
     result = frd2vtu.frdbin2vtu(str(frd_path))
-    assert result is not None, f"Failed to convert {file}"
-
-    # Additional specific checks can be added here based on known characteristics
-    # of these files
-
-
-def test_basic_plot(tmp_path, test_files):
-    """Test that the basic_plot function generates a PNG file from a VTU file."""
-    # Use a small test file for plotting
-    frd_file = "simplebeam.frd"
-    frd_path = TEST_DIR / frd_file
-    vtu_path = tmp_path / frd_path.with_suffix(".vtu").name
-    png_path = vtu_path.with_suffix(".png")
-
-    # Convert FRD to VTU
-    result = frd2vtu.frdbin2vtu(str(frd_path))
-    assert result is not None, f"Failed to convert {frd_file}"
     result.save(str(vtu_path))
-
-    # Run the plotter directly (avoid multiprocessing for CI stability)
-    try:
-        frd2vtu.plotting.plot_mesh_point_arrays(str(vtu_path))
-        assert png_path.exists(), f"PNG file not created for {vtu_path}"
-    except Exception as e:
-        pytest.fail(f"Plotting failed for {vtu_path}: {str(e)}")
+    frd2vtu.plotting.plot_mesh_point_arrays(str(vtu_path))
+    assert vtu_path.with_suffix(".png").exists()
 
 
 def test_cli_help(monkeypatch, capsys):
-    """Test CLI help output."""
+    """CLI --help exits cleanly and mentions the tool."""
     monkeypatch.setattr("sys.argv", ["frd2vtu", "--help"])
     with pytest.raises(SystemExit):
         frd2vtu.cli.main()
