@@ -1,6 +1,6 @@
 [project]
 name = "frd2vtu"
-version = "0.1.8"
+version = "0.1.9"
 description = "converter from calculix binary frd to vtu"
 authors = [{ name = "wr1", email = "8971152+wr1@users.noreply.github.com" }]
 requires-python = ">=3.10"

@@ -35,7 +35,7 @@ jobs:
     
     - name: Run tests with Xvfb
       run: |
-        xvfb-run --auto-servernum pytest test/ --cov=frd2vtu
+        xvfb-run --auto-servernum python -m pytest test/ --cov=frd2vtu
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
