@@ -11,7 +11,6 @@ import time
 import pandas as pd
 import multiprocessing
 import logging
-import os
 from typing import List, Optional, Dict, Tuple
 from pathlib import Path
 
@@ -66,7 +65,9 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
     return out
 
 
-def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.UnstructuredGrid]:
+def frdbin2vtu(
+    file_path: str, output_dir: Optional[str] = None
+) -> Optional[pv.UnstructuredGrid]:
     """
     Convert a single binary .frd file to .vtu format.
 
@@ -151,8 +152,28 @@ def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.
             e = elmarr[4:].tolist()
             els[vtk.VTK_QUAD].append(nz[e[:4]])
             nn += 8
+        elif nid == 3:
+            if vtk.VTK_TETRA not in els:
+                els[vtk.VTK_TETRA] = []
+            e = elmarr[4:].tolist()
+            els[vtk.VTK_TETRA].append(nz[e[:4]])
+            nn += 8
+        elif nid == 2:
+            if vtk.VTK_WEDGE not in els:
+                els[vtk.VTK_WEDGE] = []
+            e = elmarr[4:].tolist()
+            els[vtk.VTK_WEDGE].append(nz[e[:6]])
+            nn += 10
+        elif nid == 5:
+            if vtk.VTK_QUADRATIC_WEDGE not in els:
+                els[vtk.VTK_QUADRATIC_WEDGE] = []
+            e = elmarr[4:].tolist()
+            els[vtk.VTK_QUADRATIC_WEDGE].append(nz[e[:15]])
+            nn += 19
         else:
             logger.info(f"Unknown element type: {nid}")
+            eid.pop()
+            emat.pop()
             break
     for i in els:
         els[i] = np.array(els[i])
@@ -194,7 +215,11 @@ def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.
                     padding[col] = 0
             na = pd.concat([na, padding], ignore_index=True)
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
-    output_path = Path(output_dir) / Path(file_path).name.replace(".frd", ".vtu") if output_dir else Path(file_path).with_suffix(".vtu")
+    output_path = (
+        Path(output_dir) / Path(file_path).name.replace(".frd", ".vtu")
+        if output_dir
+        else Path(file_path).with_suffix(".vtu")
+    )
     ogrid.save(str(output_path))
     logger.info(f"Saved {output_path}")
     endtime = time.time()
@@ -202,7 +227,9 @@ def frdbin2vtu(file_path: str, output_dir: Optional[str] = None) -> Optional[pv.
     return ogrid
 
 
-def frd2vtu(frd_files: List[str], parallel: bool = True, output_dir: Optional[str] = None) -> None:
+def frd2vtu(
+    frd_files: List[str], parallel: bool = True, output_dir: Optional[str] = None
+) -> None:
     """
     Convert one or more .frd files to .vtu format.
 
@@ -222,7 +249,9 @@ def frd2vtu(frd_files: List[str], parallel: bool = True, output_dir: Optional[st
             frdbin2vtu(f, output_dir)
 
 
-def prepare_inp_for_binary(inp_files: List[str], output_dir: Optional[str] = None) -> None:
+def prepare_inp_for_binary(
+    inp_files: List[str], output_dir: Optional[str] = None
+) -> None:
     """
     Prepare CalculiX input files for binary output.
 
@@ -242,7 +271,9 @@ def prepare_inp_for_binary(inp_files: List[str], output_dir: Optional[str] = Non
                 lns[i] = lw.replace("*node file", "*node output")
                 output = True
         if output:
-            output_path = Path(output_dir) / Path(fl).name if output_dir else Path(fl).name
+            output_path = (
+                Path(output_dir) / Path(fl).name if output_dir else Path(fl).name
+            )
             logger.info(f"Read {fl}, writing for binary output to {output_path}")
             with open(output_path, "w") as f:
                 f.writelines(lns)
