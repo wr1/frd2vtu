@@ -10,8 +10,7 @@ dependencies = [
     "pyvista>=0.44.2",
     "pandas>=2.2.0",
     "numpy>=2.2.6",
-    "rich-click",
-    "treeparse",
+    "treeparse>=0.3.0",
 ]
 
 [project.scripts]

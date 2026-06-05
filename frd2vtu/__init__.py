@@ -1,14 +1,14 @@
 """
 Convert CalculiX .frd files to VTK .vtu files.
 
-This module provides functionality to convert CalculiX .frd files (binary format)
-to VTK .vtu files. It supports various element types and can handle multiple files
-in parallel.
+Binary FRD files are converted to VTK unstructured grids. Use the CLI
+(``frd2vtu convert``, ``frd2vtu iprep``) or call :func:`frdbin2vtu` /
+:func:`frd2vtu` from Python.
 
 Example:
-    >>> from frd2vtu import frd2vtu
-    >>> frd2vtu("model.frd")  # Convert single file
-    >>> frd2vtu("model1.frd", "model2.frd")  # Convert multiple files
+    >>> from frd2vtu import frdbin2vtu, frd2vtu
+    >>> frdbin2vtu("model.frd", output_dir="out/")
+    >>> frd2vtu(["model1.frd", "model2.frd"], parallel=True, output_dir="out/")
 """
 
 from .core import frdbin2vtu, frd2vtu

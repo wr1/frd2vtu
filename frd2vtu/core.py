@@ -3,36 +3,64 @@
 Core conversion functionality for FRD to VTU.
 """
 
-import numpy as np
+import logging
+import multiprocessing
 import re
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 import pyvista as pv
 import vtk
-import time
-import pandas as pd
-import multiprocessing
-import logging
-from typing import List, Optional, Dict, Tuple
-from pathlib import Path
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-# Element type to node count mapping
-e2nn: Dict[int, int] = {
-    1: 8,  # Hexahedron
-    2: 6,  # Prism
-    3: 4,  # Tetrahedron
-    4: 20,  # Quadratic Hexahedron
-    5: 15,  # Pentahedron
-    6: 10,  # Quadratic Tetrahedron
-    7: 3,  # Triangle
-    8: 6,  # Quadratic Triangle
-    9: 4,  # Quad
-    10: 8,  # Quadratic Quad
-    11: 2,  # Line
-    12: 3,  # Quadratic Line
+NodeMapper = Callable[[list, np.ndarray], np.ndarray]
+
+
+@dataclass(frozen=True)
+class ElementSpec:
+    vtk_type: int
+    n_nodes: int
+    map_nodes: NodeMapper
+
+    @property
+    def stride(self) -> int:
+        return 4 + self.n_nodes
+
+
+def _linear_nodes(n: int) -> NodeMapper:
+    def map_nodes(e: list, nz: np.ndarray) -> np.ndarray:
+        return nz[e[:n]]
+
+    return map_nodes
+
+
+def _quad_hex_nodes(e: list, nz: np.ndarray) -> np.ndarray:
+    return nz[e[:12] + e[16:] + e[12:16]]
+
+
+# CalculiX element type id -> VTK cell type and node connectivity
+ELEMENT_SPECS: Dict[int, ElementSpec] = {
+    1: ElementSpec(vtk.VTK_HEXAHEDRON, 8, _linear_nodes(8)),
+    2: ElementSpec(vtk.VTK_WEDGE, 6, _linear_nodes(6)),
+    3: ElementSpec(vtk.VTK_TETRA, 4, _linear_nodes(4)),
+    4: ElementSpec(vtk.VTK_QUADRATIC_HEXAHEDRON, 20, _quad_hex_nodes),
+    5: ElementSpec(vtk.VTK_QUADRATIC_WEDGE, 15, _linear_nodes(15)),
+    6: ElementSpec(vtk.VTK_QUADRATIC_TETRA, 10, _linear_nodes(10)),
+    7: ElementSpec(vtk.VTK_TRIANGLE, 3, _linear_nodes(3)),
+    8: ElementSpec(vtk.VTK_QUADRATIC_TRIANGLE, 6, _linear_nodes(6)),
+    9: ElementSpec(vtk.VTK_QUAD, 4, _linear_nodes(4)),
+    10: ElementSpec(vtk.VTK_QUADRATIC_QUAD, 8, _linear_nodes(8)),
+    11: ElementSpec(vtk.VTK_LINE, 2, _linear_nodes(2)),
+    12: ElementSpec(vtk.VTK_QUADRATIC_EDGE, 3, _linear_nodes(3)),
 }
+
+# Kept for tests and external reference
+e2nn: Dict[int, int] = {nid: spec.n_nodes for nid, spec in ELEMENT_SPECS.items()}
 
 
 def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
@@ -65,6 +93,40 @@ def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
     return out
 
 
+def is_binary_frd(buf: bytes) -> bool:
+    """True if the buffer contains a binary CalculiX node block (2C)."""
+    return split_blocks(buf) is not None
+
+
+def _element_block_end(lcs: List[List[Tuple[int, int, bytes]]], buf_len: int) -> int:
+    """End offset of the element connectivity block (before 1PSTEP if present)."""
+    return lcs[2][0][0] if lcs[2] else buf_len
+
+
+def _parse_elements(
+    elm: np.ndarray, nz: np.ndarray
+) -> Tuple[Dict[int, list], List[int], List[int]]:
+    els: Dict[int, list] = {}
+    eid: List[int] = []
+    emat: List[int] = []
+    nn = 0
+    while nn < len(elm):
+        nid = int(elm[1 + nn])
+        spec = ELEMENT_SPECS.get(nid)
+        if spec is None:
+            logger.info("Unknown element type: %s", nid)
+            break
+        elmarr = elm[nn : nn + spec.stride]
+        eid.append(int(elmarr[0]))
+        emat.append(int(elmarr[3]))
+        vtk_type = spec.vtk_type
+        if vtk_type not in els:
+            els[vtk_type] = []
+        els[vtk_type].append(spec.map_nodes(elmarr[4:].tolist(), nz))
+        nn += spec.stride
+    return els, eid, emat
+
+
 def frdbin2vtu(
     file_path: str, output_dir: Optional[str] = None
 ) -> Optional[pv.UnstructuredGrid]:
@@ -79,11 +141,12 @@ def frdbin2vtu(
         PyVista UnstructuredGrid object if successful, None otherwise
     """
     starttime = time.time()
-    logger.info(f"Converting {file_path}")
+    path = Path(file_path)
+    logger.info("Converting %s", file_path)
     try:
-        buf = open(file_path, "rb").read()
-    except Exception as e:
-        logger.info(f"Error reading file {file_path}: {e}")
+        buf = path.read_bytes()
+    except OSError as e:
+        logger.info("Error reading file %s: %s", file_path, e)
         return None
     lcs = split_blocks(buf)
     if lcs is None:
@@ -94,93 +157,28 @@ def frdbin2vtu(
             dtype=np.dtype([("i", "i4"), ("x", "f8"), ("y", "f8"), ("z", "f8")]),
         )
     )
-    elm = np.frombuffer(
-        buf[lcs[1][0][1] : lcs[2][0][0]],
-        dtype=np.dtype("i4"),
-    )
+    elm_end = _element_block_end(lcs, len(buf))
+    elm = np.frombuffer(buf[lcs[1][0][1] : elm_end], dtype=np.dtype("i4"))
     nz = np.zeros(nodes["i"].max() + 1, dtype=int)
     nz[nodes["i"]] = np.arange(len(nodes))
-    els, nn = {}, 0
-    eid, emat = [], []
-    while True:
-        if nn >= len(elm):
-            break
-        nid = elm[1 + nn]
-        ni = e2nn[nid]
-        elmarr = elm[0 + nn : ni + 4 + nn]
-        eid.append(elmarr[0])
-        emat.append(elmarr[3])
-        if nid == 4:
-            if vtk.VTK_QUADRATIC_HEXAHEDRON not in els:
-                els[vtk.VTK_QUADRATIC_HEXAHEDRON] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUADRATIC_HEXAHEDRON].append(nz[e[:12] + e[16:] + e[12:16]])
-            nn += 24
-        elif nid == 1:
-            if vtk.VTK_HEXAHEDRON not in els:
-                els[vtk.VTK_HEXAHEDRON] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_HEXAHEDRON].append(nz[e[:8]])
-            nn += 12
-        elif nid == 11:
-            if vtk.VTK_LINE not in els:
-                els[vtk.VTK_LINE] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_LINE].append(nz[e[:2]])
-            nn += 6
-        elif nid == 12:
-            if vtk.VTK_QUADRATIC_EDGE not in els:
-                els[vtk.VTK_QUADRATIC_EDGE] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUADRATIC_EDGE].append(nz[e[:3]])
-            nn += 7
-        elif nid == 10:
-            if vtk.VTK_QUADRATIC_QUAD not in els:
-                els[vtk.VTK_QUADRATIC_QUAD] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUADRATIC_QUAD].append(nz[e[:8]])
-            nn += 12
-        elif nid == 6:
-            if vtk.VTK_QUADRATIC_TETRA not in els:
-                els[vtk.VTK_QUADRATIC_TETRA] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUADRATIC_TETRA].append(nz[e[:10]])
-            nn += 14
-        elif nid == 9:
-            if vtk.VTK_QUAD not in els:
-                els[vtk.VTK_QUAD] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUAD].append(nz[e[:4]])
-            nn += 8
-        elif nid == 3:
-            if vtk.VTK_TETRA not in els:
-                els[vtk.VTK_TETRA] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_TETRA].append(nz[e[:4]])
-            nn += 8
-        elif nid == 2:
-            if vtk.VTK_WEDGE not in els:
-                els[vtk.VTK_WEDGE] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_WEDGE].append(nz[e[:6]])
-            nn += 10
-        elif nid == 5:
-            if vtk.VTK_QUADRATIC_WEDGE not in els:
-                els[vtk.VTK_QUADRATIC_WEDGE] = []
-            e = elmarr[4:].tolist()
-            els[vtk.VTK_QUADRATIC_WEDGE].append(nz[e[:15]])
-            nn += 19
-        else:
-            logger.info(f"Unknown element type: {nid}")
-            eid.pop()
-            emat.pop()
-            break
+    els, eid, emat = _parse_elements(elm, nz)
     for i in els:
         els[i] = np.array(els[i])
     ogrid = pv.UnstructuredGrid(els, nodes[["x", "y", "z"]].values)
     ogrid.cell_data["ccx_id"] = np.array(eid)
     ogrid.cell_data["ccx_mat"] = np.array(emat)
     ogrid.point_data["ccx_id"] = nodes["i"]
+    if not lcs[2]:
+        output_path = (
+            Path(output_dir) / path.name.replace(".frd", ".vtu")
+            if output_dir
+            else path.with_suffix(".vtu")
+        )
+        ogrid.save(str(output_path))
+        logger.info("Saved %s", output_path)
+        logger.info("Elapsed time: %.3f seconds", time.time() - starttime)
+        return ogrid
+
     endblocks = lcs[3] + lcs[4] + lcs[5]
     endblocks.sort(key=lambda x: x[0])
     headers = [buf[j[0][0] : j[1][1]] for j in zip(lcs[2], endblocks)]
@@ -198,7 +196,7 @@ def frdbin2vtu(
             continue
         ncomp = int(lns[2].split()[2])
         arrn = f"{name}_{timestamp:.3f}"
-        logger.info(f"timestamp: {timestamp:.3f}, nn: {nn}, array: {arrn}")
+        logger.info("timestamp: %.3f, nn: %s, array: %s", timestamp, nn, arrn)
 
         # set the start of the binary block to the end of the ascii block
         startblock = endblocks[n][1]
@@ -216,14 +214,13 @@ def frdbin2vtu(
             na = pd.concat([na, padding], ignore_index=True)
         ogrid.point_data[arrn] = na[[i[0] for i in nms]].values
     output_path = (
-        Path(output_dir) / Path(file_path).name.replace(".frd", ".vtu")
+        Path(output_dir) / path.name.replace(".frd", ".vtu")
         if output_dir
-        else Path(file_path).with_suffix(".vtu")
+        else path.with_suffix(".vtu")
     )
     ogrid.save(str(output_path))
-    logger.info(f"Saved {output_path}")
-    endtime = time.time()
-    logger.info(f"Elapsed time: {endtime - starttime} seconds")
+    logger.info("Saved %s", output_path)
+    logger.info("Elapsed time: %.3f seconds", time.time() - starttime)
     return ogrid
 
 
@@ -260,7 +257,8 @@ def prepare_inp_for_binary(
         output_dir: Optional directory to save modified files
     """
     for fl in inp_files:
-        lns = open(fl).readlines()
+        path = Path(fl)
+        lns = path.read_text().splitlines(keepends=True)
         output = False
         for i, ln in enumerate(lns):
             lw = ln.lower()
@@ -271,11 +269,8 @@ def prepare_inp_for_binary(
                 lns[i] = lw.replace("*node file", "*node output")
                 output = True
         if output:
-            output_path = (
-                Path(output_dir) / Path(fl).name if output_dir else Path(fl).name
-            )
-            logger.info(f"Read {fl}, writing for binary output to {output_path}")
-            with open(output_path, "w") as f:
-                f.writelines(lns)
+            out_path = Path(output_dir) / path.name if output_dir else path.name
+            logger.info("Read %s, writing for binary output to %s", fl, out_path)
+            Path(out_path).write_text("".join(lns))
         else:
-            logger.info(f"No changes needed for {fl}")
+            logger.info("No changes needed for %s", fl)

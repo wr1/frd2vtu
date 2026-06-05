@@ -3,33 +3,31 @@
 Plotting functionality for VTU files.
 """
 
-import pyvista as pv
-import numpy as np
+import logging
 import math
 import multiprocessing
-import logging
 from typing import List
-import rich_click as click
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+import numpy as np
+import pyvista as pv
+from treeparse import argument, cli, option
+
+from frd2vtu._logging import configure_logging
+
 logger = logging.getLogger(__name__)
 
 
-def plot_mesh_point_arrays(vtu):
+def plot_mesh_point_arrays(vtu: str) -> None:
     """Plot point arrays from a VTU file and save as PNG."""
     if not vtu.endswith(".vtu"):
         raise ValueError("Input file must be a .vtu file.")
 
     mesh = pv.read(vtu)
-
-    # Get point arrays
     point_arrays = mesh.point_data
 
     num_arrays = len(point_arrays) - 1
     num_cols = math.ceil(math.sqrt(num_arrays))
     num_rows = math.ceil(num_arrays / num_cols)
-    # Initialize the plotter with a split window
     plotter = pv.Plotter(
         shape=(num_rows, num_cols),
         window_size=(1200 * num_cols, 800 * num_rows),
@@ -37,11 +35,8 @@ def plot_mesh_point_arrays(vtu):
     )
 
     keys = [i for i in point_arrays.keys() if i != "ccx_id"]
-
     fact = 1.0
-
     warped_mesh = mesh
-    # Iterate over point arrays and plot each in a separate subplot
     for i, array_name in enumerate(keys):
         row = i // num_cols
         col = i % num_cols
@@ -50,15 +45,12 @@ def plot_mesh_point_arrays(vtu):
         if array_name.lower().find("disp") != -1:
             amax = mesh.point_data[array_name].max()
             b = np.array(mesh.bounds)
-
             if fact == 1:
                 fact = 0.1 * b.max() / amax
-
             warped_mesh = mesh.warp_by_vector(array_name, factor=fact)
 
         plotter.add_mesh(warped_mesh, scalars=array_name, show_edges=True)
         plotter.add_mesh(mesh.outline(), color="black")
-
         plotter.view_isometric()
         plotter.show_axes()
         plotter.add_text(
@@ -68,40 +60,52 @@ def plot_mesh_point_arrays(vtu):
             color="black",
         )
 
-    # Render the plots and save to a PNG file
     of = vtu.replace(".vtu", ".png")
     plotter.screenshot(of)
     plotter.close()
-    logger.info(f"** saved {of}")
-
-    del plotter, mesh, warped_mesh
+    logger.info("** saved %s", of)
 
 
-def basic_plots(vtu_files: List[str], parallel: bool = True):
-    """
-    Create simple plots for the given VTU files.
-
-    Parameters:
-        vtu_files: List of VTU file paths.
-    """
+def basic_plots(vtu_files: List[str], parallel: bool = True) -> None:
+    """Create simple plots for the given VTU files."""
     if parallel:
-        p = multiprocessing.Pool()
-        p.map(plot_mesh_point_arrays, vtu_files)
-        p.close()
-        p.join()
+        with multiprocessing.Pool() as pool:
+            pool.map(plot_mesh_point_arrays, vtu_files)
     else:
         for vtu in vtu_files:
             plot_mesh_point_arrays(vtu)
     logger.info("** Finished plotting.")
 
 
-@click.command()
-@click.argument("vtu_files", nargs=-1)
-@click.option("-n", "--no-parallel", is_flag=True, help="Disable parallel processing")
-def main(vtu_files, no_parallel):
-    """Create simple plots from VTU files."""
-    parallel = not no_parallel
-    basic_plots(vtu_files, parallel=parallel)
+def plot_vtu(vtu_files: List[str], no_parallel: bool = False) -> None:
+    basic_plots(vtu_files, parallel=not no_parallel)
+
+
+app = cli(
+    name="frd2vtu_plot",
+    help="Create PNG plots from VTU point data.",
+    callback=plot_vtu,
+    arguments=[
+        argument(
+            name="vtu_files",
+            nargs="*",
+            arg_type=str,
+            help="VTU files to plot",
+        ),
+    ],
+    options=[
+        option(
+            flags=["--no-parallel", "-n"],
+            flag=True,
+            help="Disable parallel processing",
+        ),
+    ],
+)
+
+
+def main() -> None:
+    configure_logging()
+    app.run()
 
 
 if __name__ == "__main__":

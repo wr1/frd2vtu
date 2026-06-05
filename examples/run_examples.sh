@@ -19,7 +19,7 @@ for i in $x; do
 done
 
 # Modify for binary output and generate runscript.sh
-python ../validation/copy_ccx_examples.py ascii/*.inp --dest output
+uv run python ../scripts/copy_ccx_examples.py ascii/*.inp --dest output
 
 # Change to output directory
 cd output

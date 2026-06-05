@@ -3,10 +3,13 @@
 CLI for FRD to VTU conversion.
 """
 
-from treeparse import cli, command, option, argument
-from .core import frd2vtu, prepare_inp_for_binary
-from typing import List
 from pathlib import Path
+from typing import List
+
+from treeparse import argument, cli, command, option
+
+from frd2vtu._logging import configure_logging
+from frd2vtu.core import frd2vtu, prepare_inp_for_binary
 
 
 def convert(frd_files: List[str], no_parallel: bool = False, output_dir: str = None):
@@ -33,11 +36,24 @@ app = cli(
             help="Convert .frd files to .vtu",
             callback=convert,
             arguments=[
-                argument(name="frd_files", nargs="*", arg_type=str, help=".frd files to convert"),
+                argument(
+                    name="frd_files",
+                    nargs="*",
+                    arg_type=str,
+                    help=".frd files to convert",
+                ),
             ],
             options=[
-                option(flags=["--no-parallel", "-n"], arg_type=bool, default=False, is_flag=True, help="Disable parallel processing"),
-                option(flags=["--output-dir", "-o"], arg_type=str, help="Output directory for .vtu files"),
+                option(
+                    flags=["--no-parallel", "-n"],
+                    flag=True,
+                    help="Disable parallel processing",
+                ),
+                option(
+                    flags=["--output-dir", "-o"],
+                    arg_type=str,
+                    help="Output directory for .vtu files",
+                ),
             ],
         ),
         command(
@@ -45,10 +61,19 @@ app = cli(
             help="Prepare .inp files for binary output",
             callback=iprep,
             arguments=[
-                argument(name="inp_files", nargs="*", arg_type=str, help=".inp files to prepare"),
+                argument(
+                    name="inp_files",
+                    nargs="*",
+                    arg_type=str,
+                    help=".inp files to prepare",
+                ),
             ],
             options=[
-                option(flags=["--output-dir", "-o"], arg_type=str, help="Output directory for modified .inp files"),
+                option(
+                    flags=["--output-dir", "-o"],
+                    arg_type=str,
+                    help="Output directory for modified .inp files",
+                ),
             ],
         ),
     ],
@@ -56,6 +81,7 @@ app = cli(
 
 
 def main():
+    configure_logging()
     app.run()
 
 

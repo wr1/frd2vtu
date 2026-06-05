@@ -1,11 +1,14 @@
-#! /bin/bash
+#!/usr/bin/env bash
+# Maintainer workflow: download CalculiX tests, run ccx, convert FRD → VTU, plot.
+# Requires: wget, ccx, frd2vtu, frd2vtu_plot
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
 post='dat eig sta 12d cvg nam fcv rout rin equ stm sen0 sen1 out fbd net'
-
 for i in $post; do
-    echo *.$i
-    rm *.$i
-done 
+    rm -f *."$i"
+done
 
 x='''acou4 beamcr4 beamnldy boxprofile2 contdamp1 gap2 oneel primaryair square
 acou5 beamexpdy1 beamp1rotate boxprofile contdamp2 green1 opt1dp section tempdiscon
@@ -25,25 +28,20 @@ beam10psmooth beamnldynodirect beam_sens_stress_coord2 contact19 equrem2 mohr2 p
 beam8pjc beamnldype beamt contact2 equrem3 networkmpc2 pret5 simplebeampipe5
 beamcr3 beamnldyp beamwrite3 contactdeleteelement equrem4 oneeltruss pret6 simplebeam'''
 
-mkdir ascii
+mkdir -p ascii
 for i in $x; do
-    echo $i
-    wget https://github.com/Dhondtguido/CalculiX/blob/master/test/$i.inp?raw=true -O ascii/$i.inp
+    echo "$i"
+    wget -q "https://github.com/Dhondtguido/CalculiX/blob/master/test/${i}.inp?raw=true" -O "ascii/${i}.inp"
 done
 
-# copy the examples to the current directory, change the FILE to OUTPUT commands to adjust to binary output
-python copy_ccx_examples.py ascii/*inp 
+uv run python scripts/copy_ccx_examples.py ascii/*.inp
 
-# run ccx on the examples
-bash runscript.sh 
+bash runscript.sh
 
-# remove the rfn.frd files, they don't convert
-rm *rfn.frd
+rm -f *rfn.frd
 
-# convert the frd files to vtu
-time frd2vtu *frd
+time frd2vtu convert *.frd
 
-for i in *vtu; do
-    frd2vtu_plot $i    
+for i in *.vtu; do
+    frd2vtu_plot "$i"
 done
-

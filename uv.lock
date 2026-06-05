@@ -96,18 +96,6 @@ wheels = [
 ]
 
 [[package]]
-name = "click"
-version = "8.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/60/6c/8ca2efa64cf75a977a0d7fac081354553ebe483345c734fb6b6515d96bbc/click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202", size = 286342, upload-time = "2025-05-20T23:19:49.832Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/32/10bb5764d90a8eee674e9dc6f4db6a0ab47c8c4d0d83c27f7c39ac415a4d/click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b", size = 102215, upload-time = "2025-05-20T23:19:47.796Z" },
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -383,13 +371,12 @@ wheels = [
 
 [[package]]
 name = "frd2vtu"
-version = "0.1.9"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "pyvista" },
-    { name = "rich-click" },
     { name = "treeparse" },
 ]
 
@@ -409,9 +396,8 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pyvista", specifier = ">=0.44.2" },
-    { name = "rich-click" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.10" },
-    { name = "treeparse" },
+    { name = "treeparse", specifier = ">=0.3.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1153,20 +1139,6 @@ wheels = [
 ]
 
 [[package]]
-name = "rich-click"
-version = "1.8.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "rich" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b7/a8/dcc0a8ec9e91d76ecad9413a84b6d3a3310c6111cfe012d75ed385c78d96/rich_click-1.8.9.tar.gz", hash = "sha256:fd98c0ab9ddc1cf9c0b7463f68daf28b4d0033a74214ceb02f761b3ff2af3136", size = 39378, upload-time = "2025-05-19T21:33:05.569Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/c2/9fce4c8a9587c4e90500114d742fe8ef0fd92d7bad29d136bb9941add271/rich_click-1.8.9-py3-none-any.whl", hash = "sha256:c3fa81ed8a671a10de65a9e20abf642cfdac6fdb882db1ef465ee33919fbcfe2", size = 36082, upload-time = "2025-05-19T21:33:04.195Z" },
-]
-
-[[package]]
 name = "ruff"
 version = "0.15.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1265,16 +1237,16 @@ wheels = [
 
 [[package]]
 name = "treeparse"
-version = "0.1.5"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/8d/dbf4314c7ed919efe470b9dc985e496a95e78208fb083e3a4be0e1c71252/treeparse-0.1.5.tar.gz", hash = "sha256:16f2000f5b9900781b293b34cd451f04b903830b8b86a25150e40899dd7a1e6e", size = 1801774, upload-time = "2025-10-29T12:19:12.86Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/f6/f149db70c753ba35855c1701d2b1c7a0ec3815021a14e0dab137842b0f17/treeparse-0.3.0.tar.gz", hash = "sha256:1468738dbd6421d4680a1895edd6507107585ff15759bf8d4ac62623d35390d7", size = 19270, upload-time = "2026-06-03T08:06:06.541Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/b1/691008c1ab33560c9b348acf5677ac3a2b180c796895a5d340d99c011def/treeparse-0.1.5-py3-none-any.whl", hash = "sha256:b3d5b3f64105c650a8dd5b12880fea5c067f4d34385955d9eb86d2555c8b65b0", size = 15833, upload-time = "2025-10-29T12:19:11.158Z" },
+    { url = "https://files.pythonhosted.org/packages/75/c2/db07610ab141020cdce65a5030979b9a3783d5111c405b9998768571d456/treeparse-0.3.0-py3-none-any.whl", hash = "sha256:98bc51ec14019df0bf19d292ebeba5329e60bc09833d56d4e2d709720f6a51d1", size = 24221, upload-time = "2026-06-03T08:06:05.172Z" },
 ]
 
 [[package]]

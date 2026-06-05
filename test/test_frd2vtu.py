@@ -2,36 +2,33 @@
 """Pytest tests for frd2vtu conversion functionality."""
 
 import logging
-import numpy as np
-import pytest
 from pathlib import Path
+
 import frd2vtu
+import frd2vtu.cli
 import frd2vtu.core
 import frd2vtu.plotting
-import frd2vtu.cli
+import numpy as np
 import pyvista as pv
+import pytest
+
+from frd_cases import FRDS_DIR, frd_params
 
 logger = logging.getLogger(__name__)
 
-TEST_DIR = Path(__file__).parent / "frds"
-
-FRD_FILES = sorted(p.name for p in TEST_DIR.glob("*.frd"))
+TEST_DIR = FRDS_DIR
 
 
-@pytest.fixture(scope="module", params=FRD_FILES)
+@pytest.fixture(scope="module", params=list(frd_params()))
 def grid(request):
-    frd_path = TEST_DIR / request.param
-    logger.info("converting %s", request.param)
-    try:
-        result = frd2vtu.frdbin2vtu(str(frd_path))
-    except Exception as e:
-        logger.warning("XFAIL %s: %s", request.param, e)
-        pytest.xfail(str(e))
+    frd_name = request.param
+    frd_path = TEST_DIR / frd_name
+    logger.info("converting %s", frd_name)
+    result = frd2vtu.frdbin2vtu(str(frd_path))
     if result is None:
-        logger.warning("XFAIL %s: returned None", request.param)
-        pytest.xfail("conversion returned None")
-    logger.info("OK %s", request.param)
-    return request.param, result
+        pytest.fail(f"{frd_name}: conversion returned None")
+    logger.info("OK %s", frd_name)
+    return frd_name, result
 
 
 def test_conversion(grid):
@@ -99,25 +96,31 @@ def test_frd2vtu_sequential(tmp_path):
 
 
 def test_unknown_element_type(tmp_path):
-    """Element type with no handler (triangle nid=7) triggers else branch and stops parsing."""
-    # A tetra first so els is non-empty, then a triangle (nid=7) which has no handler.
-    # The else branch logs + breaks; the tetra cell is still in the output grid.
+    """Unsupported element type id stops parsing; earlier cells are kept."""
     coords = [
         (1, 0.0, 0.0, 0.0),
         (2, 1.0, 0.0, 0.0),
         (3, 0.0, 1.0, 0.0),
         (4, 0.0, 0.0, 1.0),
-        (5, 0.5, 0.5, 0.0),
     ]
-    buf = _make_frd_buffer(
-        coords,
-        [(1, 3, 1, [1, 2, 3, 4]), (2, 7, 1, [1, 2, 5])],
-    )
+    buf = _make_frd_buffer(coords, [(1, 3, 1, [1, 2, 3, 4]), (2, 99, 1, [1, 2, 3])])
     frd_path = tmp_path / "mixed_unknown.frd"
     frd_path.write_bytes(buf)
     result = frd2vtu.frdbin2vtu(str(frd_path), str(tmp_path))
     assert result is not None
-    assert result.n_cells == 1  # only tetra processed before break
+    assert result.n_cells == 1
+
+
+def test_triangle_element(tmp_path):
+    """Triangle elements (nid=7) convert to VTK triangles."""
+    coords = [(1, 0.0, 0.0, 0.0), (2, 1.0, 0.0, 0.0), (3, 0.0, 1.0, 0.0)]
+    buf = _make_frd_buffer(coords, [(1, 7, 1, [1, 2, 3])])
+    frd_path = tmp_path / "triangle.frd"
+    frd_path.write_bytes(buf)
+    result = frd2vtu.frdbin2vtu(str(frd_path), str(tmp_path))
+    assert result is not None
+    assert result.n_cells == 1
+    assert result.n_points == 3
 
 
 def test_prepare_inp_for_binary(tmp_path):
@@ -165,13 +168,14 @@ def _make_frd_buffer(node_ids_coords, elem_records):
     "elem_type,node_count,elem_nodes",
     [
         ("tetra", 4, [1, 2, 3, 4]),  # nid=3
+        ("triangle", 3, [1, 2, 3]),  # nid=7
         ("wedge", 6, [1, 2, 3, 4, 5, 6]),  # nid=2
         ("qwedge", 15, list(range(1, 16))),  # nid=5
     ],
 )
 def test_new_element_types(tmp_path, elem_type, node_count, elem_nodes):
     """Tetra, wedge, and quadratic-wedge elements convert without error."""
-    nid_map = {"tetra": 3, "wedge": 2, "qwedge": 5}
+    nid_map = {"tetra": 3, "triangle": 7, "wedge": 2, "qwedge": 5}
     nid = nid_map[elem_type]
     coords = [(i + 1, float(i), float(i % 3), float(i % 2)) for i in range(node_count)]
     buf = _make_frd_buffer(coords, [(1, nid, 1, elem_nodes)])

@@ -1,13 +1,15 @@
-[![Deploy](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml)[![Test](https://github.com/wr1/frd2vtu/actions/workflows/test.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/test.yml)![PyPI](https://img.shields.io/pypi/v/frd2vtu)
+[![Deploy](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/publish.yml)
+[![Test](https://github.com/wr1/frd2vtu/actions/workflows/test.yml/badge.svg)](https://github.com/wr1/frd2vtu/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/frd2vtu)](https://pypi.org/project/frd2vtu/)
 
 # frd2vtu
 
-A Python tool to convert CalculiX .frd files to VTK .vtu files.
-It is inspired by ccx2paraview https://github.com/calculix/ccx2paraview
+Convert CalculiX binary `.frd` files to VTK `.vtu` files for ParaView and other VTK tools.
+Inspired by [ccx2paraview](https://github.com/calculix/ccx2paraview).
 
 ## Overview
 
-This tool converts CalculiX binary .frd files to VTK .vtu files, which can be visualized in tools like ParaView. It supports various element types and can handle multiple files in parallel.
+`frd2vtu` reads CalculiX binary FRD output (from `*element output` / `*node output`) and writes VTK unstructured grids with field data per timestep. Multiple files can be converted in parallel.
 
 ## Installation
 
@@ -15,17 +17,55 @@ This tool converts CalculiX binary .frd files to VTK .vtu files, which can be vi
 pip install frd2vtu
 ```
 
+Development install:
+
+```bash
+uv pip install -e ".[dev]"
+```
 
 ## Usage
 
+Convert one or more FRD files (parallel by default; output goes next to each input unless `--output-dir` is set):
+
 ```bash
-frd2vtu input.frd 
+frd2vtu convert model.frd
+frd2vtu convert run1.frd run2.frd --output-dir ./vtu
+frd2vtu convert *.frd --no-parallel
 ```
 
+Prepare a CalculiX `.inp` for binary FRD output (`*node file` / `*el file` → `*node output` / `*element output`):
+
+```bash
+frd2vtu iprep model.inp
+frd2vtu iprep model.inp --output-dir ./prepared
+```
+
+Plot VTU point arrays (writes a PNG beside each file):
+
+```bash
+frd2vtu_plot model.vtu
+frd2vtu_plot a.vtu b.vtu --no-parallel
+```
+
+CLI help is tree-shaped; export the command schema as JSON:
+
+```bash
+frd2vtu --help
+frd2vtu --json
+```
+
+### Python API
+
+```python
+from frd2vtu import frdbin2vtu, frd2vtu
+
+grid = frdbin2vtu("model.frd", output_dir="out/")
+frd2vtu(["run1.frd", "run2.frd"], parallel=True, output_dir="out/")
+```
 
 ## Examples
 
-Test cases from the ![Calculix test directory](https://github.com/Dhondtguido/CalculiX/tree/master/test)
+Screenshots from the [CalculiX test directory](https://github.com/Dhondtguido/CalculiX/tree/master/test):
 
 ![anipla2](https://github.com/user-attachments/assets/32bea8bd-d705-401c-8503-14b69111adda)
 ![beamf](https://github.com/user-attachments/assets/45ce4a86-e391-46d5-911a-3ede6a9c90e7)
@@ -37,10 +77,12 @@ MIT — see [LICENSE](LICENSE).
 
 ## Test coverage
 
-Tested against CalculiX example FRD files. ❌ indicates an unsupported element type.
+Tested against binary CalculiX FRD files in `test/frds/` (ASCII header-only stubs are omitted). Regenerate with `make readme-coverage`.
+
+<!-- coverage-table:start -->
 
 <details>
-<summary>144 files</summary>
+<summary>142 files</summary>
 
 | File | Status |
 |------|--------|
@@ -88,7 +130,7 @@ Tested against CalculiX example FRD files. ❌ indicates an unsupported element 
 | beamp | ✅ |
 | beamp1rotate | ✅ |
 | beamp2 | ✅ |
-| beamp3 | ❌ |
+| beamp3 | ✅ |
 | beamp_ciarlet | ✅ |
 | beamperror | ✅ |
 | beamprb | ✅ |
@@ -110,7 +152,6 @@ Tested against CalculiX example FRD files. ❌ indicates an unsupported element 
 | contact16 | ✅ |
 | contact19 | ✅ |
 | contact2 | ✅ |
-| contactdeleteelement | ❌ |
 | contdamp1 | ✅ |
 | contdamp2 | ✅ |
 | coupling13 | ✅ |
@@ -186,8 +227,8 @@ Tested against CalculiX example FRD files. ❌ indicates an unsupported element 
 | truss | ✅ |
 | truss2 | ✅ |
 | uprofile | ✅ |
-| zerocoeff | ❌ |
 | zerovel | ✅ |
-
 </details>
+
+<!-- coverage-table:end -->
 
