@@ -24,10 +24,17 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 addopts = "--cov=."
 
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint.per-file-ignores]
+# treeparse 0.3.x rejects PEP 585/604 annotations in callback signatures.
+"frd2vtu/cli.py" = ["UP006", "UP035", "UP045"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
-    "ruff>=0.9.10",
+    "ruff==0.16.9",
     "pre-commit>=4.0.0",
 ]

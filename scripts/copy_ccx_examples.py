@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
 """Prepare CalculiX .inp files for binary FRD output and write runscript.sh."""
 
 import logging
 from pathlib import Path
-from typing import List
 
 from treeparse import argument, cli, option
 
@@ -31,7 +29,7 @@ def frdasc2bin(fl: str) -> None:
         Path(out).write_text("".join(lns))
 
 
-def copy_file_to_dir(src_files: List[str], dest: str = ".") -> None:
+def copy_file_to_dir(src_files: list[str], dest: str = ".") -> None:
     """Convert inputs and write a CalculiX runscript.sh in dest."""
     dest_path = Path(dest)
     dest_path.mkdir(parents=True, exist_ok=True)
@@ -43,7 +41,7 @@ def copy_file_to_dir(src_files: List[str], dest: str = ".") -> None:
     (dest_path / "runscript.sh").write_text(runscript)
 
 
-def copy_examples(src_files: List[str], dest: str = ".") -> None:
+def copy_examples(src_files: list[str], dest: str = ".") -> None:
     copy_file_to_dir(src_files, dest=dest)
 
 

@@ -16,5 +16,4 @@ SKIPPED_FRDS: frozenset[str] = frozenset(
 
 
 def frd_params():
-    for name in FRD_FILES:
-        yield name
+    yield from FRD_FILES

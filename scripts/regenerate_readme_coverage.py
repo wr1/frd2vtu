@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Regenerate the README FRD coverage table from test/frds."""
 
 import re
@@ -8,8 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "test"))
 
-import frd2vtu  # noqa: E402
-from frd_cases import FRD_FILES, FRDS_DIR, SKIPPED_FRDS  # noqa: E402
+from frd_cases import FRD_FILES, FRDS_DIR, SKIPPED_FRDS
+
+import frd2vtu
 
 MARKERS = ("<!-- coverage-table:start -->", "<!-- coverage-table:end -->")
 
@@ -19,7 +19,7 @@ def conversion_status(frd_name: str) -> str:
         return "—"
     try:
         grid = frd2vtu.frdbin2vtu(str(FRDS_DIR / frd_name))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "❌"
     return "✅" if grid is not None else "❌"
 

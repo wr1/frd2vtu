@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Core conversion functionality for FRD to VTU.
 """
@@ -7,9 +6,9 @@ import logging
 import multiprocessing
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -44,7 +43,7 @@ def _quad_hex_nodes(e: np.ndarray, nz: np.ndarray) -> np.ndarray:
 
 
 # CalculiX element type id -> VTK cell type and node connectivity
-ELEMENT_SPECS: Dict[int, ElementSpec] = {
+ELEMENT_SPECS: dict[int, ElementSpec] = {
     1: ElementSpec(vtk.VTK_HEXAHEDRON, 8, _linear_nodes(8)),
     2: ElementSpec(vtk.VTK_WEDGE, 6, _linear_nodes(6)),
     3: ElementSpec(vtk.VTK_TETRA, 4, _linear_nodes(4)),
@@ -60,10 +59,10 @@ ELEMENT_SPECS: Dict[int, ElementSpec] = {
 }
 
 # Kept for tests and external reference
-e2nn: Dict[int, int] = {nid: spec.n_nodes for nid, spec in ELEMENT_SPECS.items()}
+e2nn: dict[int, int] = {nid: spec.n_nodes for nid, spec in ELEMENT_SPECS.items()}
 
 
-def split_blocks(buf: bytes) -> Optional[List[List[Tuple[int, int, bytes]]]]:
+def split_blocks(buf: bytes) -> list[list[tuple[int, int, bytes]]] | None:
     """
     Split the binary buffer into blocks based on specific patterns.
 
@@ -103,14 +102,14 @@ def is_binary_frd(buf: bytes) -> bool:
     return split_blocks(buf) is not None
 
 
-def _element_block_end(lcs: List[List[Tuple[int, int, bytes]]], buf_len: int) -> int:
+def _element_block_end(lcs: list[list[tuple[int, int, bytes]]], buf_len: int) -> int:
     """End offset of the element connectivity block (before 1PSTEP if present)."""
     return lcs[2][0][0] if lcs[2] else buf_len
 
 
 def _parse_elements(
     elm: np.ndarray, nz: np.ndarray
-) -> Tuple[Dict[int, np.ndarray], np.ndarray, np.ndarray]:
+) -> tuple[dict[int, np.ndarray], np.ndarray, np.ndarray]:
     """
     Decode the element connectivity block.
 
@@ -121,8 +120,8 @@ def _parse_elements(
     first-seen order), so `cell_data["ccx_id"/"ccx_mat"]` line up with cells even
     for meshes containing more than one element type.
     """
-    starts: List[int] = []
-    types: List[int] = []
+    starts: list[int] = []
+    types: list[int] = []
     nn = 0
     while nn < len(elm):
         nid = int(elm[1 + nn])
@@ -140,9 +139,9 @@ def _parse_elements(
     starts_arr = np.asarray(starts, dtype=np.intp)
     types_arr = np.asarray(types)
 
-    els: Dict[int, np.ndarray] = {}
-    eid_parts: List[np.ndarray] = []
-    emat_parts: List[np.ndarray] = []
+    els: dict[int, np.ndarray] = {}
+    eid_parts: list[np.ndarray] = []
+    emat_parts: list[np.ndarray] = []
     for nid in dict.fromkeys(types):
         spec = ELEMENT_SPECS[nid]
         s = starts_arr[types_arr == nid]
@@ -157,8 +156,8 @@ def _parse_elements(
 
 
 def frdbin2vtu(
-    file_path: str, output_dir: Optional[str] = None
-) -> Optional[pv.UnstructuredGrid]:
+    file_path: str, output_dir: str | None = None
+) -> pv.UnstructuredGrid | None:
     """
     Convert a single binary .frd file to .vtu format.
 
@@ -251,7 +250,7 @@ def frdbin2vtu(
     return ogrid
 
 
-def _convert_one(args: Tuple[str, Optional[str]]) -> None:
+def _convert_one(args: tuple[str, str | None]) -> None:
     """Pool worker: convert a single file, discarding the returned grid.
 
     Returning the grid would pickle the whole mesh back to the parent; the
@@ -261,7 +260,7 @@ def _convert_one(args: Tuple[str, Optional[str]]) -> None:
 
 
 def frd2vtu(
-    frd_files: List[str], parallel: bool = True, output_dir: Optional[str] = None
+    frd_files: list[str], parallel: bool = True, output_dir: str | None = None
 ) -> None:
     """
     Convert one or more .frd files to .vtu format.
@@ -285,9 +284,7 @@ def frd2vtu(
             frdbin2vtu(f, output_dir)
 
 
-def prepare_inp_for_binary(
-    inp_files: List[str], output_dir: Optional[str] = None
-) -> None:
+def prepare_inp_for_binary(inp_files: list[str], output_dir: str | None = None) -> None:
     """
     Prepare CalculiX input files for binary output.
 

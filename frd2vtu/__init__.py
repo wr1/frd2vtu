@@ -11,8 +11,7 @@ Example:
     >>> frd2vtu(["model1.frd", "model2.frd"], parallel=True, output_dir="out/")
 """
 
-from .core import frdbin2vtu, frd2vtu
-
+from .core import frd2vtu, frdbin2vtu
 from .plotting import basic_plots, plot_mesh_point_arrays
 
-__all__ = ["frd2vtu", "frdbin2vtu", "basic_plots", "plot_mesh_point_arrays"]
+__all__ = ["basic_plots", "frd2vtu", "frdbin2vtu", "plot_mesh_point_arrays"]

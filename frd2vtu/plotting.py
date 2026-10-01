@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 """
 Plotting functionality for VTU files.
 """
@@ -6,7 +5,6 @@ Plotting functionality for VTU files.
 import logging
 import math
 import multiprocessing
-from typing import List
 
 import numpy as np
 import pyvista as pv
@@ -34,7 +32,7 @@ def plot_mesh_point_arrays(vtu: str) -> None:
         off_screen=True,
     )
 
-    keys = [i for i in point_arrays.keys() if i != "ccx_id"]
+    keys = [i for i in point_arrays if i != "ccx_id"]
     fact = 1.0
     warped_mesh = mesh
     for i, array_name in enumerate(keys):
@@ -71,7 +69,7 @@ def _plot_one(vtu: str) -> None:
     plot_mesh_point_arrays(vtu)
 
 
-def basic_plots(vtu_files: List[str], parallel: bool = True) -> None:
+def basic_plots(vtu_files: list[str], parallel: bool = True) -> None:
     """Create simple plots for the given VTU files."""
     if parallel:
         with multiprocessing.Pool() as pool:
@@ -83,7 +81,7 @@ def basic_plots(vtu_files: List[str], parallel: bool = True) -> None:
     logger.info("** Finished plotting.")
 
 
-def plot_vtu(vtu_files: List[str], no_parallel: bool = False) -> None:
+def plot_vtu(vtu_files: list[str], no_parallel: bool = False) -> None:
     basic_plots(vtu_files, parallel=not no_parallel)
 
 

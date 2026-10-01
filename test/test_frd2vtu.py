@@ -1,18 +1,17 @@
-#!/usr/bin/env python
 """Pytest tests for frd2vtu conversion functionality."""
 
 import logging
 from pathlib import Path
 
+import numpy as np
+import pytest
+import pyvista as pv
+from frd_cases import FRDS_DIR, frd_params
+
 import frd2vtu
 import frd2vtu.cli
 import frd2vtu.core
 import frd2vtu.plotting
-import numpy as np
-import pyvista as pv
-import pytest
-
-from frd_cases import FRDS_DIR, frd_params
 
 logger = logging.getLogger(__name__)
 
