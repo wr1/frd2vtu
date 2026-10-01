@@ -66,11 +66,17 @@ def plot_mesh_point_arrays(vtu: str) -> None:
     logger.info("** saved %s", of)
 
 
+def _plot_one(vtu: str) -> None:
+    """Pool worker: plot a single VTU, discarding the return value."""
+    plot_mesh_point_arrays(vtu)
+
+
 def basic_plots(vtu_files: List[str], parallel: bool = True) -> None:
     """Create simple plots for the given VTU files."""
     if parallel:
         with multiprocessing.Pool() as pool:
-            pool.map(plot_mesh_point_arrays, vtu_files)
+            for _ in pool.imap_unordered(_plot_one, vtu_files):
+                pass
     else:
         for vtu in vtu_files:
             plot_mesh_point_arrays(vtu)

@@ -123,6 +123,25 @@ def test_triangle_element(tmp_path):
     assert result.n_points == 3
 
 
+def test_mixed_element_ccx_id_alignment(tmp_path):
+    """ccx_id/ccx_mat follow PyVista cell order for mixed element meshes."""
+    coords = [(i + 1, float(i), 0.0, 0.0) for i in range(6)]
+    elems = [
+        (101, 3, 11, [1, 2, 3, 4]),  # tetra (nid=3)
+        (202, 7, 22, [1, 2, 3]),  # triangle (nid=7)
+        (303, 3, 33, [2, 3, 4, 5]),  # tetra (nid=3)
+    ]
+    buf = _make_frd_buffer(coords, elems)
+    frd_path = tmp_path / "mixed_types.frd"
+    frd_path.write_bytes(buf)
+    result = frd2vtu.frdbin2vtu(str(frd_path), str(tmp_path))
+    assert result is not None
+    # PyVista groups cells by first-seen type: tets (VTK 10), then triangle (VTK 5)
+    assert list(result.celltypes) == [10, 10, 5]
+    assert list(result.cell_data["ccx_id"]) == [101, 303, 202]
+    assert list(result.cell_data["ccx_mat"]) == [11, 33, 22]
+
+
 def test_prepare_inp_for_binary(tmp_path):
     """prepare_inp_for_binary rewrites *node file/*el file keywords."""
     inp = tmp_path / "test.inp"
